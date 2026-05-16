@@ -4,7 +4,7 @@ import '../services/pyq_data_service.dart';
 import '../utils/string_extensions.dart';
 import 'paper_button.dart';
 
-class CourseCard extends StatelessWidget {
+class CourseCard extends StatefulWidget {
   static const int _visibleCap = 4;
   static const double _paperSpacing = 8.0;
 
@@ -20,8 +20,30 @@ class CourseCard extends StatelessWidget {
   });
 
   @override
+  State<CourseCard> createState() => _CourseCardState();
+}
+
+class _CourseCardState extends State<CourseCard> {
+  @override
+  void didUpdateWidget(covariant CourseCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!oldWidget.isExpanded && widget.isExpanded) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        Scrollable.ensureVisible(
+          context,
+          duration: const Duration(milliseconds: 320),
+          curve: Curves.easeOut,
+          alignment: 0.0,
+        );
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final course = widget.course;
 
     final courseName = course.name
         .replaceAll('_', ' ')
@@ -31,11 +53,11 @@ class CourseCard extends StatelessWidget {
     final courseCode = course.joinedCourseIds.toUpperCase();
 
     final papers = course.papers;
-    final hasMore = papers.length > _visibleCap;
-    final visiblePapers = (isExpanded || !hasMore)
+    final hasMore = papers.length > CourseCard._visibleCap;
+    final visiblePapers = (widget.isExpanded || !hasMore)
         ? papers
-        : papers.take(_visibleCap).toList();
-    final hiddenCount = papers.length - _visibleCap;
+        : papers.take(CourseCard._visibleCap).toList();
+    final hiddenCount = papers.length - CourseCard._visibleCap;
 
     return Card(
       elevation: 2,
@@ -84,8 +106,8 @@ class CourseCard extends StatelessWidget {
                 )
               else
                 Wrap(
-                  spacing: _paperSpacing,
-                  runSpacing: _paperSpacing,
+                  spacing: CourseCard._paperSpacing,
+                  runSpacing: CourseCard._paperSpacing,
                   alignment: WrapAlignment.center,
                   children: [
                     for (final paper in visiblePapers)
@@ -95,11 +117,11 @@ class CourseCard extends StatelessWidget {
                       ),
                     if (hasMore)
                       _ToggleButton(
-                        label: isExpanded
+                        label: widget.isExpanded
                             ? 'Show less'
                             : '+$hiddenCount more',
-                        expanded: isExpanded,
-                        onTap: onToggleExpand,
+                        expanded: widget.isExpanded,
+                        onTap: widget.onToggleExpand,
                       ),
                   ],
                 ),
@@ -129,20 +151,20 @@ class _ToggleButton extends StatelessWidget {
       onPressed: onTap,
       icon: Icon(
         expanded ? Icons.expand_less : Icons.expand_more,
-        size: 16,
+        size: 18,
       ),
       label: Text(
         label,
-        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
       ),
       style: TextButton.styleFrom(
         foregroundColor: theme.colorScheme.primary,
         backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.08),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(22),
         ),
-        minimumSize: const Size(0, 32),
+        minimumSize: const Size(0, 44),
       ),
     );
   }

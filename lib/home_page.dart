@@ -91,28 +91,31 @@ class _HomePageState extends State<HomePage> {
   }
 
   void filterDocuments(String query) {
-    searchQuery = query;
-
-    if (query.isEmpty) {
-      setState(() {
-        filteredCourses = List.from(courses);
-      });
-      return;
-    }
-
-    final queryWords = query
-        .toLowerCase()
-        .split(' ')
-        .where((word) => word.isNotEmpty)
-        .toList();
-
     setState(() {
+      searchQuery = query;
+
+      if (query.isNotEmpty) {
+        _expandedCourseNums.clear();
+      }
+
+      if (query.isEmpty) {
+        filteredCourses = List.from(courses);
+        return;
+      }
+
+      final queryWords = query
+          .toLowerCase()
+          .split(' ')
+          .where((word) => word.isNotEmpty)
+          .toList();
+
       filteredCourses = courses.where((course) {
         final courseName = course.name.toLowerCase();
         final courseCodes = course.courseId
             .map((id) => id.toLowerCase())
             .join(' ');
-        final description = '$courseName ${course.joinedCourseIds.toLowerCase()}';
+        final description =
+            '$courseName ${course.joinedCourseIds.toLowerCase()}';
 
         bool matchesAllWords = true;
         for (final word in queryWords) {
@@ -137,8 +140,40 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildCoursesView(BuildContext context) {
     if (filteredCourses.isEmpty && isStreamComplete) {
-      return const Center(
-        child: Text('No courses found. Try a different search term.'),
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.search_off, size: 64, color: Colors.grey.shade400),
+              const SizedBox(height: 16),
+              Text(
+                'No matches for "$searchQuery"',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Try a different course name or code',
+                style: TextStyle(color: Colors.grey.shade600),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              TextButton.icon(
+                onPressed: () {
+                  searchController.clear();
+                  filterDocuments('');
+                },
+                icon: const Icon(Icons.clear),
+                label: const Text('Clear search'),
+              ),
+            ],
+          ),
+        ),
       );
     }
 
@@ -187,21 +222,45 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title),
-
+        title: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'BU Scholar',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+            ),
+            Text(
+              'Previous Year Papers',
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w400),
+            ),
+          ],
+        ),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         elevation: 2,
         centerTitle: false,
         actions: [
-          Text('Made with ❤️ by M4dhav'),
-          IconButton(
-            onPressed: () async {
-              await launchUrl(Uri.parse("https://github.com/M4dhav"));
-            },
-            icon: SvgPicture.asset(
-              'assets/github-mark.svg',
-              width: 24,
-              height: 24,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: TextButton.icon(
+              onPressed: () async {
+                await launchUrl(Uri.parse("https://github.com/M4dhav"));
+              },
+              icon: SvgPicture.asset(
+                'assets/github-mark.svg',
+                width: 24,
+                height: 24,
+              ),
+              label: const Text(
+                'Made with ❤️ by M4dhav',
+                style: TextStyle(fontSize: 14),
+              ),
+              style: TextButton.styleFrom(
+                foregroundColor:
+                    Theme.of(context).colorScheme.onSurface,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              ),
             ),
           ),
         ],
@@ -221,15 +280,35 @@ class _HomePageState extends State<HomePage> {
                     color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
-                suffixIcon: searchController.text.isNotEmpty
-                    ? IconButton(
+                suffixIcon: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: Text(
+                        searchQuery.isEmpty
+                            ? '${courses.length} courses'
+                            : '${filteredCourses.length} / ${courses.length}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context).hintColor,
+                        ),
+                      ),
+                    ),
+                    if (searchController.text.isNotEmpty)
+                      IconButton(
                         icon: const Icon(Icons.clear),
                         onPressed: () {
                           searchController.clear();
                           filterDocuments('');
                         },
                       )
-                    : null,
+                    else
+                      const SizedBox(width: 12),
+                  ],
+                ),
+                suffixIconConstraints:
+                    const BoxConstraints(minWidth: 0, minHeight: 0),
               ),
               onChanged: filterDocuments,
             ),
