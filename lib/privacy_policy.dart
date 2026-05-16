@@ -21,7 +21,7 @@ class PrivacyPolicyPage extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             const Text(
-              'Last Updated: May 12, 2025',
+              'Last Updated: May 16, 2026',
               style: TextStyle(fontStyle: FontStyle.italic),
             ),
             const SizedBox(height: 24),
@@ -46,9 +46,10 @@ class PrivacyPolicyPage extends StatelessWidget {
             ),
             _buildSection(
               'Third-Party Services',
-              'Our application uses Appwrite as a backend service to deliver content (such as PDF files of question papers). Important notes about this usage:\n\n'
-                  '• Appwrite serves as a content delivery system only.\n\n'
-                  '• No user identification or tracking is implemented through this service.\n\n'
+              'Our application fetches content directly from a public GitHub repository (BU-Scholar) to deliver the question-paper index and PDF files. Important notes about this usage:\n\n'
+                  '• The app retrieves a single JSON manifest (pyq-data.json) and individual PDF files from raw.githubusercontent.com. These requests are unauthenticated and identical for every user.\n\n'
+                  '• GitHub may log standard request metadata (such as IP address and user agent) as part of serving these public files, governed by GitHub\'s own privacy policy. We do not receive, access, or store any of this data.\n\n'
+                  '• No user identification, accounts, or tracking are implemented in the app.\n\n'
                   '• We do not use analytics services to track app usage.',
             ),
             _buildSection(
@@ -73,7 +74,7 @@ class PrivacyPolicyPage extends StatelessWidget {
               'Contact Us',
               'If you have questions or comments about this Privacy Policy or our data practices, please contact us at:\n\n'
                   'BU Scholar Team\n'
-                  'Email: mgdev1702@gmail.com',
+                  'Email: support@m4dhav.dev',
             ),
           ],
         ),
