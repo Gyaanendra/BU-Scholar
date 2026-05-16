@@ -9,12 +9,9 @@ import '../models/pyq_data.dart';
 class PyqDataService {
   static const String _owner = 'M4dhav';
   static const String _repo = 'BU-Scholar';
+  static const String _branch = 'main';
   static const String _dataFile = 'pyq-data.json';
   static const String _pdfFolder = 'pyqs';
-
-  static const String _vercelEnv = String.fromEnvironment('VERCEL_ENV');
-  static const bool _isProduction = _vercelEnv == 'production';
-  static const String _branch = _isProduction ? 'main' : 'dev';
 
   static const String _rawBase =
       'https://raw.githubusercontent.com/$_owner/$_repo/$_branch';

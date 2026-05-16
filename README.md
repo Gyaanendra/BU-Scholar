@@ -60,11 +60,6 @@ BU Scholar is a comprehensive mobile companion application designed specifically
    flutter run
    ```
 
-   By default, local/debug builds fetch content from the `dev` branch. To force production data:
-   ```bash
-   flutter run --dart-define=VERCEL_ENV=production
-   ```
-
 ## Project Structure
 
 ```
@@ -104,23 +99,7 @@ There's no backend service. The app reads everything from two locations in the G
 - **`pyq-data.json`** at the repo root — a single JSON document describing every course and paper.
 - **`pyqs/`** at the repo root — a flat folder of PDFs, each named `<course_num>-<paper_num>.pdf` to match the `paper_id` field in the manifest.
 
-At runtime, the app does one HTTP GET for the manifest from `raw.githubusercontent.com`, then constructs direct raw URLs for each PDF on demand. Adding or updating papers is purely a matter of editing the JSON and adding files — no app release required. See [CONTRIBUTIONS.md](CONTRIBUTIONS.md) for the full schema and contribution flow.
-
-### Branch routing
-
-The deployed app picks the GitHub branch to read from based on the `VERCEL_ENV` build-time constant:
-
-| Environment              | `VERCEL_ENV` value | Branch fetched |
-|--------------------------|--------------------|----------------|
-| Vercel production deploy | `production`       | `main`         |
-| Vercel preview deploy    | `preview`          | `dev`          |
-| `flutter run` locally    | unset / empty      | `dev`          |
-
-The Vercel build must forward the env var:
-
-```bash
-flutter build web --release --dart-define=VERCEL_ENV=$VERCEL_ENV
-```
+At runtime, the app does one HTTP GET for the manifest from `raw.githubusercontent.com` on the `main` branch, then constructs direct raw URLs for each PDF on demand. Adding or updating papers is purely a matter of editing the JSON and adding files — no app release required. See [CONTRIBUTIONS.md](CONTRIBUTIONS.md) for the full schema and contribution flow.
 
 ## Contributing
 

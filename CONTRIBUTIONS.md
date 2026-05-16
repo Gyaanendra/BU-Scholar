@@ -9,7 +9,7 @@ A valid contribution requires **two** things in the same PR:
 1. A new entry in [`pyq-data.json`](pyq-data.json) — the manifest the app reads at startup
 2. The PDF placed flat in [`pyqs/`](pyqs/) with a filename that matches the entry's `paper_id`
 
-Open the PR against the **`dev`** branch. `main` is the production branch and only receives merges after content is verified — the deployed web app fetches from `main` in production and from `dev` for preview deployments and local development.
+Open the PR against the **`dev`** branch. `main` is the production branch and only receives merges after content is verified by a maintainer.
 
 ## 📋 Table of Contents
 
