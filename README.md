@@ -6,11 +6,11 @@ BU Scholar is a comprehensive mobile companion application designed specifically
 ## Features
 
 ### Currently Implemented
-- **Previous Year Question Papers**: Access mid-semester and end-semester examination papers for various courses from GitHub repository
+- **Previous Year Question Papers**: Access end-semester, mid-semester, makeup, supplementary exams, and supplementary materials (e.g. NPTEL assignment solutions) for various courses
 - **Intuitive Search System**: Find resources by course name, code, or description with support for multi-word searches
 - **Modern UI Design**: Clean and responsive interface built with Flutter's Material Design 3
 - **PDF Viewing**: Seamlessly view PDF documents directly within the app
-- **GitHub-Based Storage**: Content delivered directly from GitHub repository structure for fast access and easy updates
+- **Manifest-driven content**: A single `pyq-data.json` file describes every course and paper, served as raw content from the GitHub repository — no app release needed to publish new papers
 
 ### Planned Features
 - **Academic Roadmaps**: Structured learning paths for different programs and specializations
@@ -22,10 +22,12 @@ BU Scholar is a comprehensive mobile companion application designed specifically
 ## Technology Stack
 
 - **Frontend**: Flutter 3.x with Material Design 3
-- **Backend**: GitHub Repository API for document storage and retrieval
+- **Content delivery**: Public GitHub raw content (`raw.githubusercontent.com`) for the `pyq-data.json` manifest and individual PDFs — no authentication, no GitHub API rate limits
+- **Data modeling**: `json_serializable` + `build_runner` for code-generated `fromJson`/`toJson`
 - **PDF Handling**: Syncfusion Flutter PDF Viewer
 - **State Management**: Flutter's built-in state management with StatefulWidgets
-- **HTTP Client**: Dart's http package for API communication
+- **HTTP Client**: Dart's `http` package
+- **Hosting**: Vercel (Flutter web build)
 
 ## Getting Started
 
@@ -39,8 +41,8 @@ BU Scholar is a comprehensive mobile companion application designed specifically
 
 1. Clone the repository
    ```bash
-   git clone https://github.com/yourusername/bu_scholar.git
-   cd bu_scholar
+   git clone https://github.com/M4dhav/BU-Scholar.git
+   cd BU-Scholar
    ```
 
 2. Install dependencies
@@ -48,71 +50,90 @@ BU Scholar is a comprehensive mobile companion application designed specifically
    flutter pub get
    ```
 
-3. Run the application
+3. Generate model code (one-time after fresh clone, and any time you change a model class)
+   ```bash
+   dart run build_runner build
+   ```
+
+4. Run the application
    ```bash
    flutter run
    ```
 
+   By default, local/debug builds fetch content from the `dev` branch. To force production data:
+   ```bash
+   flutter run --dart-define=VERCEL_ENV=production
+   ```
+
 ## Project Structure
 
-- `lib/`
-  - `main.dart`: Application entry point and theme configuration
-  - `home_page.dart`: Main screen with search functionality and resource listing
-  - `github_service.dart`: Integration with GitHub repository API for data fetching
-  - `widgets/`: Reusable UI components
-    - `course_card.dart`: Display card for course resources
-    - `paper_button.dart`: Button component for accessing PDF papers
-    - `pdf_viewer.dart`: PDF viewing component
-    - `tag_chip.dart`: Tag component for categorizing resources
-    - `paper_tag.dart`: Specialized tag component for paper types
-  - `utils/`: Utility functions and extensions
-    - `string_extensions.dart`: String manipulation utilities
-
-## Repository Structure Setup
-
-The application expects a `pyqs` folder in the root of the repository with the following structure:
-
 ```
-pyqs/
-├── computer-science-fundamentals_CSF111/
-│   ├── mid_semester.pdf
-│   └── end_semester.pdf
-├── data-structures-and-algorithms_CSF211/
-│   ├── mid_semester.pdf
-│   └── end_semester.pdf
-├── operating-systems_CSF372/
-│   └── end_semester.pdf
-└── database-management-systems_CSF212/
-    ├── mid_semester.pdf
-    └── end_semester.pdf
+.
+├── pyq-data.json              # Source of truth: every course and paper
+├── pyqs/                      # Flat folder of PDFs named <course_num>-<paper_num>.pdf
+├── build.yaml                 # Routes json_serializable output to lib/models/generated/
+├── lib/
+│   ├── main.dart              # Entry point, routes, theme
+│   ├── home_page.dart         # Course list + search
+│   ├── privacy_policy.dart    # Privacy policy screen
+│   ├── models/
+│   │   ├── course.dart        # Course model (JsonSerializable)
+│   │   ├── paper.dart         # Paper model (JsonSerializable)
+│   │   ├── pyq_data.dart      # Top-level wrapper
+│   │   └── generated/         # build_runner output (*.g.dart)
+│   ├── services/
+│   │   └── pyq_data_service.dart  # Fetches pyq-data.json, builds PDF URLs
+│   ├── widgets/
+│   │   ├── course_card.dart
+│   │   ├── paper_button.dart
+│   │   ├── pdf_viewer.dart
+│   │   ├── paper_tag.dart
+│   │   └── tag_chip.dart
+│   └── utils/
+│       └── string_extensions.dart
+└── web/
+    ├── index.html, manifest.json, favicon.png, icons/
+    ├── sitemap.xml, robots.txt
+    └── _redirects             # SPA fallback for the host
 ```
 
-### Folder Naming Convention
-- Course folders should follow the format: `course-name_COURSECODE`
-- Course names should use hyphens instead of spaces
-- Course codes should be uppercase
-- Paper files should be named `mid_semester.pdf` or `end_semester.pdf`
+## Data Model
 
-## Backend Setup
+There's no backend service. The app reads everything from two locations in the GitHub repo:
 
-The application uses GitHub's API to dynamically fetch course information and paper availability:
+- **`pyq-data.json`** at the repo root — a single JSON document describing every course and paper.
+- **`pyqs/`** at the repo root — a flat folder of PDFs, each named `<course_num>-<paper_num>.pdf` to match the `paper_id` field in the manifest.
 
-1. The app scans the `pyqs` folder for course directories
-2. Each directory name is parsed to extract course name and code
-3. The app checks for the presence of mid and end semester papers
-4. Course cards are dynamically generated based on available papers
+At runtime, the app does one HTTP GET for the manifest from `raw.githubusercontent.com`, then constructs direct raw URLs for each PDF on demand. Adding or updating papers is purely a matter of editing the JSON and adding files — no app release required. See [CONTRIBUTIONS.md](CONTRIBUTIONS.md) for the full schema and contribution flow.
 
-No additional backend setup is required - the app works directly with the GitHub repository structure.
+### Branch routing
+
+The deployed app picks the GitHub branch to read from based on the `VERCEL_ENV` build-time constant:
+
+| Environment              | `VERCEL_ENV` value | Branch fetched |
+|--------------------------|--------------------|----------------|
+| Vercel production deploy | `production`       | `main`         |
+| Vercel preview deploy    | `preview`          | `dev`          |
+| `flutter run` locally    | unset / empty      | `dev`          |
+
+The Vercel build must forward the env var:
+
+```bash
+flutter build web --release --dart-define=VERCEL_ENV=$VERCEL_ENV
+```
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are very welcome. The two most common types:
+
+**Adding question papers** — please read [CONTRIBUTIONS.md](CONTRIBUTIONS.md). The short version: add an entry to `pyq-data.json` and drop the matching PDF in `pyqs/`, both in the same PR opened against the **`dev`** branch.
+
+**Code changes**:
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+2. Create your feature branch off `dev` (`git checkout -b feature/amazing-feature dev`)
+3. Commit your changes
+4. Push to your fork and open a PR against `dev`
 
 ## License
 
@@ -123,5 +144,5 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - Developed as a comprehensive companion app for Bennett University students
 - Inspired by the need for a unified platform to access academic resources and guidance
 - Designed to enhance the student experience by providing easy access to course materials, roadmaps, and other academic resources
-- Built with Flutter and Appwrite for cross-platform compatibility and ease of deployment
+- Built with Flutter for cross-platform compatibility and ease of deployment
 - Created with the goal of fostering academic success and supporting the Bennett University community

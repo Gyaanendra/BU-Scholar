@@ -1,231 +1,217 @@
 # Contributing to BU Scholar
 
-Thank you for your interest in contributing to BU Scholar! This guide will help you understand how to properly organize and submit question papers.
+Thanks for helping grow the BU Scholar question paper archive! This guide explains how to add new papers so they show up in the app.
 
 ## ⚠️ Important
 
-**All files MUST be organized in the correct folder structure BEFORE submitting a Pull Request.**  
-PRs with incorrectly organized files will not be accepted.
+A valid contribution requires **two** things in the same PR:
+
+1. A new entry in [`pyq-data.json`](pyq-data.json) — the manifest the app reads at startup
+2. The PDF placed flat in [`pyqs/`](pyqs/) with a filename that matches the entry's `paper_id`
+
+Open the PR against the **`dev`** branch. `main` is the production branch and only receives merges after content is verified — the deployed web app fetches from `main` in production and from `dev` for preview deployments and local development.
 
 ## 📋 Table of Contents
 
-- [Required Directory Structure](#required-directory-structure)
-- [How to Contribute](#how-to-contribute)
-- [Quality Guidelines](#quality-guidelines)
+- [How the data is structured](#-how-the-data-is-structured)
+- [Adding a paper to an existing course](#-adding-a-paper-to-an-existing-course)
+- [Same course, different code](#-same-course-different-code)
+- [Adding a brand-new course](#-adding-a-brand-new-course)
+- [PDF requirements](#-pdf-requirements)
+- [PR checklist](#-pr-checklist)
+- [Common mistakes](#-common-mistakes)
 
-## � Required Directory Structure
+## 🗂️ How the data is structured
 
-Your Pull Request **must** follow this exact structure:
+[`pyq-data.json`](pyq-data.json) is the single source of truth. Every course is one object with a list of papers:
+
+```json
+{
+    "course_num": 19,
+    "name": "Microprocessor And Computer Architecture",
+    "course_id": ["CSET203"],
+    "papers": [
+        {
+            "paper_name": "End Semester",
+            "paper_suffix": "2023",
+            "paper_id": "19-1.pdf",
+            "paper_num": 1
+        }
+    ]
+}
+```
+
+### Field reference
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `course_num` | int | Globally unique. Prefix for every `paper_id` in this course. |
+| `name` | string | Display name in Title Case (e.g. `"Operating Systems"`). |
+| `course_id` | string[] | One or more course codes (e.g. `["CSET203"]` or `["CSET211", "CSAI333"]`). Use multiple entries when the same course has been offered under different codes — see [Same course, different code](#-same-course-different-code). Rendered comma-separated in the UI. |
+| `paper_name` | string | The category label shown to users. See [accepted values](#accepted-paper_name-values). |
+| `paper_suffix` | string | Free-form qualifier rendered after `paper_name`. Use a 4-digit year for exams (`"2024"`), `"Week N"` for assignment series, etc. |
+| `paper_id` | string | PDF filename — **must** equal `"<course_num>-<paper_num>.pdf"`. |
+| `paper_num` | int | Unique within the course, sequential starting from 1. |
+
+### File layout
+
+PDFs live flat in [`pyqs/`](pyqs/) with no subfolders:
 
 ```
 pyqs/
-├── subject-name_COURSECODE/
-│   ├── mid_2024.pdf
-│   ├── mid_2025.pdf
-│   ├── end_2024.pdf
-│   └── end_2025.pdf
+├── 1-1.pdf
+├── 1-2.pdf
+├── 19-1.pdf
+├── 19-2.pdf
+└── 19-4.pdf   # paper_id "19-4.pdf" in pyq-data.json
 ```
 
-### Real Examples:
+### Accepted `paper_name` values
 
-```
-pyqs/
-├── soft-computing_CSET326/
-│   ├── mid_2024.pdf
-│   ├── end_2024.pdf
-│   └── end_2025.pdf
-├── artificial-intelligence-and-machine-learning_CSET301/
-│   ├── mid_2024.pdf
-│   └── end_2025.pdf
-├── computer-networks_CSET207/
-│   ├── mid_2023.pdf
-│   ├── mid_2024.pdf
-│   └── end_2024.pdf
-└── operating-systems_CSET209/
-    ├── end_2024.pdf
-    └── end_2025.pdf
-```
+Use one of these where applicable. If you have a genuinely new category, add it and mention it in the PR description so we can review:
 
-### Directory Naming Rules:
+- `End Semester`
+- `Mid Semester`
+- `Makeup Examination`
+- `Supplementary Examination`
+- `NPTEL Assignment`
 
-1. **Format:** `subject-name_COURSECODE`
-2. **Subject name:**
-   - Use lowercase letters
-   - Replace spaces with hyphens (`-`)
-   - Example: `artificial intelligence and machine learning` → `artificial-intelligence-and-machine-learning`
-3. **Course code:**
-   - Use UPPERCASE letters
-   - Examples: `CSET326`, `EMAT102L`, `EPHY108L`
+### Display order
 
-### File Naming Rules (Inside Directories):
+The app sorts papers within a course as follows:
+1. Papers whose `paper_suffix` parses as a 4-digit year sort by year **descending** (newest first), then by `paper_name` alphabetically.
+2. Papers with non-numeric suffixes (e.g. `"Week 0"`) appear after the year-based papers, sorted by `paper_num` ascending.
 
-Files inside each course directory **must** be named with exam type and year:
+So if you're adding a Week series, pick `paper_num` values in the order you want them displayed.
 
-- ✅ `mid_2024.pdf` - Mid-term examination from 2024
-- ✅ `mid_2025.pdf` - Mid-term examination from 2025
-- ✅ `end_2024.pdf` - End-term examination from 2024
-- ✅ `end_2025.pdf` - End-term examination from 2025
+## ➕ Adding a paper to an existing course
 
-**Important Notes:**
-- ⚠️ Only **mid-term** and **end-term** examinations are accepted
-- ❌ **NO** quizzes, sessionals, or other exam types
-- ✅ Year **must** be included in the filename
-- ❌ **DO NOT** use full filenames like `soft_computing_cset326_end_2024.pdf` inside the directories
+Suppose you want to add **Mid Semester 2026** for Operating Systems (`course_num: 23`). The course currently has 2 papers (`paper_num` 1 and 2), so the next free `paper_num` is `3`.
 
-## � How to Contribute
+**1.** Add an entry inside that course's `papers` array in `pyq-data.json`:
 
-### Step 1: Fork and Clone the Repository
-
-```bash
-git clone https://github.com/YOUR_USERNAME/BU-Scholar.git
-cd BU-Scholar
+```json
+{
+    "paper_name": "Mid Semester",
+    "paper_suffix": "2026",
+    "paper_id": "23-3.pdf",
+    "paper_num": 3
+}
 ```
 
-### Step 2: Organize Your Files
+**2.** Copy your PDF to `pyqs/23-3.pdf` — the filename must equal `paper_id` exactly.
 
-**Important:** Files MUST be organized in the correct structure manually before submitting.
+That's it.
 
-Create the proper directory structure and place your files:
+## 🔀 Same course, different code
 
-```bash
-# Create course directory
-mkdir -p pyqs/subject-name_COURSECODE
+Sometimes the same course is offered under a different code in a later semester (curriculum revision, department reshuffle, cross-listing across programs, etc.). **Don't create a new course entry for this** — that would split the same papers across two cards and confuse search.
 
-# Copy and rename your files
-# Format: examtype_year.pdf
-cp your_file.pdf pyqs/subject-name_COURSECODE/mid_2024.pdf
+Instead, add the new code to the existing course's `course_id` array.
+
+**Example:** Statistical Machine Learning is `CSET211`, and a later batch sees it offered as `CSAI333`. Update the existing course in place:
+
+```diff
+ {
+     "course_num": 27,
+     "name": "Statistical Machine Learning",
+-    "course_id": ["CSET211"],
++    "course_id": ["CSET211", "CSAI333"],
+     "papers": [ ... ]
+ }
 ```
 
-**Example structure to create:**
-```
-pyqs/
-├── soft-computing_CSET326/
-│   ├── mid_2024.pdf
-│   ├── end_2024.pdf
-│   └── end_2025.pdf
-└── computer-networks_CSET207/
-    ├── mid_2024.pdf
-    └── end_2024.pdf
-```
+The card will now render `CSET211, CSAI333` and search will match either code. All existing papers stay attached, and any new papers you add use the same `course_num` (27) regardless of which code the paper was offered under.
 
-### Step 3: Verify the Structure
+### When to add a code vs create a new course
 
-**Before submitting your PR, double-check:**
+| Scenario | Action |
+|---|---|
+| Same syllabus and content, just renamed/recoded | Add code to existing course |
+| Cross-listed under two codes simultaneously | Add code to existing course |
+| Genuinely different course that happens to share a name | Create a new course (see below) |
 
-✅ Files are in `pyqs/` directory  
-✅ Each course has its own directory with format: `subject-name_COURSECODE`  
-✅ Files inside directories are named: `mid_YEAR.pdf`, `end_YEAR.pdf`  
-✅ Year is included in all filenames
-✅ Only mid and end term exams (NO quizzes or sessionals)
-✅ No loose PDF files outside of course directories  
-✅ PDFs are readable and properly oriented  
+If you're unsure, mention it in the PR description and a maintainer will help decide.
 
-### Step 4: Commit and Push
+## 🆕 Adding a brand-new course
 
-```bash
-git add pyqs/
-git commit -m "Add question papers for [Course Names]"
-git push origin main
-```
+1. Pick the next unused `course_num` (look at the highest existing one in `pyq-data.json` and add 1).
+2. Add a new course object to the top-level `courses` array.
+3. Start `paper_num` at `1`.
+4. Drop the PDFs in `pyqs/` using the `<course_num>-<paper_num>.pdf` convention.
 
-### Step 5: Create a Pull Request
+Example for `course_num: 29`:
 
-1. Go to your fork on GitHub
-2. Click "New Pull Request"
-3. In the description, include:
-   - List of courses added
-   - Exam types (mid/end) with years
-   - Academic year
-
-**Example PR Description:**
-```
-Added question papers for:
-- Soft Computing (CSET326) - Mid 2024, End 2024, End 2025
-- Computer Networks (CSET207) - Mid 2024, End 2024
-- Operating Systems (CSET209) - End 2024, End 2025
-
-Academic Year: 2024-25
+```json
+{
+    "course_num": 29,
+    "name": "Cloud Computing",
+    "course_id": ["CSET330"],
+    "papers": [
+        {
+            "paper_name": "End Semester",
+            "paper_suffix": "2026",
+            "paper_id": "29-1.pdf",
+            "paper_num": 1
+        }
+    ]
+}
 ```
 
-## ❌ Common Mistakes to Avoid
-
-### Wrong Structure (Will be Rejected):
-
-```
-❌ pyqs/soft_computing_cset326_end_2024.pdf
-❌ pyqs/CSET326/end_2024.pdf
-❌ pyqs/Soft Computing CSET326/end_2024.pdf
-❌ soft-computing_CSET326/soft_computing_cset326_end_2024.pdf
-❌ soft-computing_CSET326/end.pdf (missing year)
-❌ soft-computing_CSET326/quiz_2024.pdf (no quizzes allowed)
-❌ soft-computing_CSET326/sessional_2024.pdf (no sessionals allowed)
-```
-
-### Correct Structure (Will be Accepted):
-
-```
-✅ pyqs/soft-computing_CSET326/end_2024.pdf
-✅ pyqs/soft-computing_CSET326/mid_2025.pdf
-✅ pyqs/computer-networks_CSET207/mid_2024.pdf
-✅ pyqs/artificial-intelligence-and-machine-learning_CSET301/end_2024.pdf
-```
-
-## 📊 Quality Guidelines
-
-### File Requirements:
+## 📄 PDF requirements
 
 ✅ **DO:**
-- Use clear, readable scans
-- Ensure PDFs are properly oriented
-- Keep file sizes reasonable (compress if needed)
+- Use clear, readable scans (or original digital PDFs)
+- Ensure pages are properly oriented (no upside-down or sideways scans)
+- Keep file sizes reasonable — compress before uploading if needed
 - Verify the PDF opens correctly
-- Use official course names and codes
-- **Organize files in correct directory structure BEFORE submitting PR**
+- Name the file `<course_num>-<paper_num>.pdf` to match the `paper_id`
 
 ❌ **DON'T:**
-- Submit loose PDF files without proper directory structure
-- Upload blurry or unreadable scans
-- Upload duplicate papers
-- Use incorrect course codes or directory names
+- Upload a PDF without a matching `pyq-data.json` entry (or vice versa)
+- Use the old folder structure (`pyqs/<course-name>_CODE/...`) — it's no longer supported
+- Submit blurry or unreadable scans
+- Upload duplicate papers (check if the entry already exists)
 
-### Content Guidelines:
+## ✅ PR checklist
 
-- Only upload **past year question papers** (PyQs)
-- **Only mid-term and end-term examinations** are accepted
-- **NO quizzes, sessionals, or other exam types**
-- Ensure papers are from Bennett University
-- Verify the course code matches the current curriculum
-- Year must be included in all filenames
+Before opening your PR, verify:
 
-## ✅ PR Checklist
+- [ ] PR targets the **`dev`** branch
+- [ ] Both the JSON entry and the PDF are committed in the same PR
+- [ ] Each PDF filename matches its `paper_id` exactly
+- [ ] `paper_num` is unique within the course and sequential
+- [ ] `paper_id` follows the `<course_num>-<paper_num>.pdf` convention
+- [ ] `paper_suffix` is a **string** — note the quotes around year values (`"2024"`, not `2024`)
+- [ ] PDFs are flat in `pyqs/` (no subdirectories)
+- [ ] No duplicate entries
+- [ ] PDFs are readable and properly oriented
+- [ ] PR description lists every course and paper added
 
-Before submitting your Pull Request, verify:
+## ❌ Common mistakes
 
-- [ ] All files are in the `pyqs/` directory
-- [ ] Each course has its own directory: `subject-name_COURSECODE`
-- [ ] Directory names use lowercase subject names with hyphens
-- [ ] Directory names use UPPERCASE course codes
-- [ ] Files inside directories are named: `mid_YEAR.pdf`, `end_YEAR.pdf`
-- [ ] Year is included in all filenames (e.g., 2024, 2025)
-- [ ] Only mid and end term exams (NO quizzes or sessionals)
-- [ ] No files are directly in `pyqs/` (must be in subdirectories)
-- [ ] All PDFs are readable and correctly oriented
-- [ ] PR description includes list of courses added
+```
+❌ pyqs/operating-systems_CSET209/mid_2024.pdf
+   (old folder structure — flat pyqs/ only)
 
-## 🤝 Additional Support
+❌ pyqs/Mid_Sem_OS_2024.pdf
+   (filename must match paper_id like 23-3.pdf)
 
-If you encounter any issues:
+❌ { "paper_suffix": 2024 }
+   (must be a string: "2024")
 
-1. Check the [README.md](README.md) for general project information
-2. Review the [directory structure requirements](#required-directory-structure) carefully
-3. Open an issue on GitHub describing your problem
+❌ Adds 23-3.pdf to the folder but forgets the JSON entry
+   (both are required)
 
-## 📞 Contact
+❌ Creates a second course entry for the same syllabus under a new code
+   (add the code to the existing course's course_id array instead)
 
-For questions or clarifications:
+✅ pyqs/23-3.pdf  +  matching entry in pyq-data.json
+```
+
+## 📞 Support
+
 - Open an issue on GitHub
-- Contact the maintainer: M4dhav
+- Maintainer: M4dhav
 
----
-
-Thank you for contributing to BU Scholar and helping fellow students! 🎓✨
+Thanks for contributing! 🎓✨
