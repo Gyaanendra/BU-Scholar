@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'models/course.dart';
 import 'services/pyq_data_service.dart';
+import 'widgets/contribute_footer.dart';
 import 'widgets/course_card.dart';
 
 class HomePage extends StatefulWidget {
@@ -184,29 +185,43 @@ class _HomePageState extends State<HomePage> {
       const crossAxisCount = 3;
       return SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        child: StaggeredGrid.count(
-          crossAxisCount: crossAxisCount,
-          mainAxisSpacing: 20,
-          crossAxisSpacing: 20,
+        child: Column(
           children: [
-            for (final course in filteredCourses)
-              StaggeredGridTile.fit(
-                crossAxisCellCount: 1,
-                child: CourseCard(
-                  course: course,
-                  isExpanded: _expandedCourseNums.contains(course.courseNum),
-                  onToggleExpand: () => _toggleCourseExpanded(course.courseNum),
-                ),
-              ),
+            StaggeredGrid.count(
+              crossAxisCount: crossAxisCount,
+              mainAxisSpacing: 20,
+              crossAxisSpacing: 20,
+              children: [
+                for (final course in filteredCourses)
+                  StaggeredGridTile.fit(
+                    crossAxisCellCount: 1,
+                    child: CourseCard(
+                      course: course,
+                      isExpanded:
+                          _expandedCourseNums.contains(course.courseNum),
+                      onToggleExpand: () =>
+                          _toggleCourseExpanded(course.courseNum),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            const ContributeFooterCard(),
           ],
         ),
       );
     } else {
       return ListView.separated(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        itemCount: filteredCourses.length,
+        itemCount: filteredCourses.length + 1,
         separatorBuilder: (_, _) => const SizedBox(height: 12),
         itemBuilder: (context, index) {
+          if (index == filteredCourses.length) {
+            return const Padding(
+              padding: EdgeInsets.only(top: 4, bottom: 16),
+              child: ContributeFooterCard(),
+            );
+          }
           final course = filteredCourses[index];
           return CourseCard(
             course: course,
@@ -240,26 +255,36 @@ class _HomePageState extends State<HomePage> {
         elevation: 2,
         centerTitle: false,
         actions: [
+          IconButton(
+            tooltip: 'Contribute papers',
+            icon: const Icon(Icons.handshake_outlined),
+            onPressed: () async {
+              await launchUrl(
+                Uri.parse(contributionsUrl),
+                mode: LaunchMode.externalApplication,
+              );
+            },
+          ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 4),
             child: TextButton.icon(
               onPressed: () async {
                 await launchUrl(Uri.parse("https://github.com/M4dhav"));
               },
               icon: SvgPicture.asset(
                 'assets/github-mark.svg',
-                width: 24,
-                height: 24,
+                width: 18,
+                height: 18,
               ),
               label: const Text(
                 'Made with ❤️ by M4dhav',
-                style: TextStyle(fontSize: 14),
+                style: TextStyle(fontSize: 12),
               ),
               style: TextButton.styleFrom(
                 foregroundColor:
                     Theme.of(context).colorScheme.onSurface,
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               ),
             ),
           ),
