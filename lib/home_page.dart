@@ -10,14 +10,14 @@ import 'widgets/paper_button.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({
-    super.key, 
+    super.key,
     required this.title,
     required this.themeMode,
     required this.onThemeToggle,
     required this.onAccentColorChange,
     required this.currentAccentColor,
   });
-  
+
   final String title;
   final ThemeMode themeMode;
   final VoidCallback onThemeToggle;
@@ -82,48 +82,67 @@ class _HomePageState extends State<HomePage> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Pick Accent Color'),
-        content: SizedBox(
-          width: 300,
-          child: GridView.builder(
-            shrinkWrap: true,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 4,
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-            ),
-            itemCount: colors.length,
-            itemBuilder: (context, index) {
-              final color = colors[index];
-              final isSelected = widget.currentAccentColor.value == color.value;
-              return GestureDetector(
-                onTap: () {
-                  widget.onAccentColorChange(color);
-                  Navigator.pop(context);
-                },
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: color,
-                    shape: BoxShape.circle,
-                    border: isSelected ? Border.all(color: Colors.white, width: 3) : null,
-                    boxShadow: isSelected ? [
-                      BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 8, spreadRadius: 2)
-                    ] : null,
-                  ),
-                  child: isSelected ? const Icon(Icons.check, color: Colors.white, size: 20) : null,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Pick Accent Color'),
+            content: SizedBox(
+              width: 300,
+              child: GridView.builder(
+                shrinkWrap: true,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 4,
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 12,
                 ),
-              );
-            },
+                itemCount: colors.length,
+                itemBuilder: (context, index) {
+                  final color = colors[index];
+                  final isSelected =
+                      widget.currentAccentColor.value == color.value;
+                  return GestureDetector(
+                    onTap: () {
+                      widget.onAccentColorChange(color);
+                      Navigator.pop(context);
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                        border:
+                            isSelected
+                                ? Border.all(color: Colors.white, width: 3)
+                                : null,
+                        boxShadow:
+                            isSelected
+                                ? [
+                                  BoxShadow(
+                                    color: color.withValues(alpha: 0.5),
+                                    blurRadius: 8,
+                                    spreadRadius: 2,
+                                  ),
+                                ]
+                                : null,
+                      ),
+                      child:
+                          isSelected
+                              ? const Icon(
+                                Icons.check,
+                                color: Colors.white,
+                                size: 20,
+                              )
+                              : null,
+                    ),
+                  );
+                },
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+            ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-        ],
-      ),
     );
   }
 
@@ -189,90 +208,92 @@ class _HomePageState extends State<HomePage> {
         _expandedCourseNums.clear();
       }
 
-      final queryWords = query
-          .toLowerCase()
-          .split(' ')
-          .where((word) => word.isNotEmpty)
-          .toList();
+      final queryWords =
+          query
+              .toLowerCase()
+              .split(' ')
+              .where((word) => word.isNotEmpty)
+              .toList();
 
-      filteredCourses = courses.where((course) {
-        bool matchesFilters = true;
+      filteredCourses =
+          courses.where((course) {
+            bool matchesFilters = true;
 
-        if (filterMidSem || filterEndSem) {
-          bool hasMidSem = false;
-          bool hasEndSem = false;
+            if (filterMidSem || filterEndSem) {
+              bool hasMidSem = false;
+              bool hasEndSem = false;
 
-          for (final paper in course.papers) {
-            final lowerLabel = paper.label.toLowerCase();
-            if (lowerLabel.contains('mid semester')) hasMidSem = true;
-            if (lowerLabel.contains('end semester')) hasEndSem = true;
-          }
+              for (final paper in course.papers) {
+                final lowerLabel = paper.label.toLowerCase();
+                if (lowerLabel.contains('mid semester')) hasMidSem = true;
+                if (lowerLabel.contains('end semester')) hasEndSem = true;
+              }
 
-          if (filterMidSem && filterEndSem) {
-            matchesFilters = hasMidSem || hasEndSem;
-          } else if (filterMidSem) {
-            matchesFilters = hasMidSem;
-          } else if (filterEndSem) {
-            matchesFilters = hasEndSem;
-          }
-        }
-
-        if (selectedYear != null) {
-          bool hasYear = false;
-          for (final paper in course.papers) {
-            if (paper.paperSuffix.contains(selectedYear!.substring(0, 4)) ||
-                paper.paperSuffix == selectedYear) {
-              hasYear = true;
-              break;
+              if (filterMidSem && filterEndSem) {
+                matchesFilters = hasMidSem || hasEndSem;
+              } else if (filterMidSem) {
+                matchesFilters = hasMidSem;
+              } else if (filterEndSem) {
+                matchesFilters = hasEndSem;
+              }
             }
-          }
-          if (!hasYear) matchesFilters = false;
-        }
 
-        if (selectedTypes.isNotEmpty) {
-          bool hasType = false;
-          for (final paper in course.papers) {
-            final lower = paper.label.toLowerCase();
-            for (final type in selectedTypes) {
-              if (lower.contains(type.toLowerCase())) {
-                hasType = true;
+            if (selectedYear != null) {
+              bool hasYear = false;
+              for (final paper in course.papers) {
+                if (paper.paperSuffix.contains(selectedYear!.substring(0, 4)) ||
+                    paper.paperSuffix == selectedYear) {
+                  hasYear = true;
+                  break;
+                }
+              }
+              if (!hasYear) matchesFilters = false;
+            }
+
+            if (selectedTypes.isNotEmpty) {
+              bool hasType = false;
+              for (final paper in course.papers) {
+                final lower = paper.label.toLowerCase();
+                for (final type in selectedTypes) {
+                  if (lower.contains(type.toLowerCase())) {
+                    hasType = true;
+                    break;
+                  }
+                }
+                if (hasType) break;
+              }
+              if (!hasType) matchesFilters = false;
+            }
+
+            if (!matchesFilters) return false;
+
+            if (query.isEmpty) return true;
+
+            final courseName = course.name.toLowerCase();
+            final courseCodes = course.courseId
+                .map((id) => id.toLowerCase())
+                .join(' ');
+            final description =
+                '$courseName ${course.joinedCourseIds.toLowerCase()}';
+
+            bool matchesAllWords = true;
+            for (final word in queryWords) {
+              if (!courseName.contains(word) &&
+                  !courseCodes.contains(word) &&
+                  !description.contains(word)) {
+                matchesAllWords = false;
                 break;
               }
             }
-            if (hasType) break;
-          }
-          if (!hasType) matchesFilters = false;
-        }
 
-        if (!matchesFilters) return false;
+            final lowerQuery = query.toLowerCase();
+            final exactPhraseMatch =
+                courseName.contains(lowerQuery) ||
+                courseCodes.contains(lowerQuery) ||
+                description.contains(lowerQuery);
 
-        if (query.isEmpty) return true;
-
-        final courseName = course.name.toLowerCase();
-        final courseCodes = course.courseId
-            .map((id) => id.toLowerCase())
-            .join(' ');
-        final description =
-            '$courseName ${course.joinedCourseIds.toLowerCase()}';
-
-        bool matchesAllWords = true;
-        for (final word in queryWords) {
-          if (!courseName.contains(word) &&
-              !courseCodes.contains(word) &&
-              !description.contains(word)) {
-            matchesAllWords = false;
-            break;
-          }
-        }
-
-        final lowerQuery = query.toLowerCase();
-        final exactPhraseMatch =
-            courseName.contains(lowerQuery) ||
-            courseCodes.contains(lowerQuery) ||
-            description.contains(lowerQuery);
-
-        return matchesAllWords || exactPhraseMatch;
-      }).toList();
+            return matchesAllWords || exactPhraseMatch;
+          }).toList();
     });
   }
 
@@ -324,7 +345,7 @@ class _HomePageState extends State<HomePage> {
       'MATH & FOUNDATIONS',
       'PHYSICS & SCIENCES',
       'VALUE ADDED COURSES',
-      'GENERAL'
+      'GENERAL',
     ];
 
     for (var course in filteredCourses) {
@@ -332,7 +353,10 @@ class _HomePageState extends State<HomePage> {
       groupedCourses.putIfAbsent(cat, () => []).add(course);
     }
 
-    final activeCategories = categoriesOrder.where((cat) => groupedCourses.containsKey(cat)).toList();
+    final activeCategories =
+        categoriesOrder
+            .where((cat) => groupedCourses.containsKey(cat))
+            .toList();
 
     return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -359,7 +383,9 @@ class _HomePageState extends State<HomePage> {
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.2,
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: 0.8),
                 ),
               ),
             ),
@@ -369,10 +395,14 @@ class _HomePageState extends State<HomePage> {
                 child: GridView.count(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: screenWidth >= 1200 ? 4 : (screenWidth >= 700 ? 3 : 2),
+                  crossAxisCount:
+                      screenWidth >= 1200 ? 4 : (screenWidth >= 700 ? 3 : 2),
                   mainAxisSpacing: 16,
                   crossAxisSpacing: 16,
-                  childAspectRatio: screenWidth >= 1200 ? 1.2 : (screenWidth >= 700 ? 1.0 : 0.72),
+                  childAspectRatio:
+                      screenWidth >= 1200
+                          ? 1.2
+                          : (screenWidth >= 700 ? 1.0 : 0.72),
                   children: [
                     for (final course in categoryCourses)
                       CourseCard(course: course),
@@ -383,27 +413,43 @@ class _HomePageState extends State<HomePage> {
               Card(
                 margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 elevation: 0,
-                color: Theme.of(context).colorScheme.surfaceContainerLow.withValues(alpha: 0.5),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                color: Theme.of(
+                  context,
+                ).colorScheme.surfaceContainerLow.withValues(alpha: 0.5),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 clipBehavior: Clip.antiAlias,
                 child: Column(
                   children: [
                     for (int i = 0; i < categoryCourses.length; i++) ...[
                       CourseListTile(
                         course: categoryCourses[i],
-                        isExpanded: _expandedCourseNums.contains(categoryCourses[i].courseNum),
-                        onTap: () => _toggleCourseExpanded(categoryCourses[i].courseNum),
+                        isExpanded: _expandedCourseNums.contains(
+                          categoryCourses[i].courseNum,
+                        ),
+                        onTap:
+                            () => _toggleCourseExpanded(
+                              categoryCourses[i].courseNum,
+                            ),
                       ),
-                      if (_expandedCourseNums.contains(categoryCourses[i].courseNum))
+                      if (_expandedCourseNums.contains(
+                        categoryCourses[i].courseNum,
+                      ))
                         Padding(
                           padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                           child: Wrap(
                             spacing: 8,
                             runSpacing: 8,
-                            children: categoryCourses[i].papers.map((paper) => PaperButton(
-                              label: paper.label,
-                              url: PyqDataService.paperUrl(paper),
-                            )).toList(),
+                            children:
+                                categoryCourses[i].papers
+                                    .map(
+                                      (paper) => PaperButton(
+                                        label: paper.label,
+                                        url: PyqDataService.paperUrl(paper),
+                                      ),
+                                    )
+                                    .toList(),
                           ),
                         ),
                       if (i < categoryCourses.length - 1)
@@ -411,7 +457,9 @@ class _HomePageState extends State<HomePage> {
                           height: 1,
                           indent: 16,
                           endIndent: 16,
-                          color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.outlineVariant.withValues(alpha: 0.5),
                         ),
                     ],
                   ],
@@ -476,10 +524,11 @@ class _HomePageState extends State<HomePage> {
                 style: TextStyle(fontSize: 12),
               ),
               style: TextButton.styleFrom(
-                foregroundColor:
-                    Theme.of(context).colorScheme.onSurface,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                foregroundColor: Theme.of(context).colorScheme.onSurface,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
               ),
             ),
           ),
@@ -509,7 +558,11 @@ class _HomePageState extends State<HomePage> {
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 10),
                           child: Text(
-                            (searchQuery.isEmpty && !filterMidSem && !filterEndSem && selectedYear == null && selectedTypes.isEmpty)
+                            (searchQuery.isEmpty &&
+                                    !filterMidSem &&
+                                    !filterEndSem &&
+                                    selectedYear == null &&
+                                    selectedTypes.isEmpty)
                                 ? '${courses.length} courses'
                                 : '${filteredCourses.length} / ${courses.length}',
                             style: TextStyle(
@@ -530,8 +583,10 @@ class _HomePageState extends State<HomePage> {
                           const SizedBox(width: 12),
                       ],
                     ),
-                    suffixIconConstraints:
-                        const BoxConstraints(minWidth: 0, minHeight: 0),
+                    suffixIconConstraints: const BoxConstraints(
+                      minWidth: 0,
+                      minHeight: 0,
+                    ),
                   ),
                   onChanged: filterDocuments,
                 ),
@@ -547,9 +602,13 @@ class _HomePageState extends State<HomePage> {
                               avatar: const Icon(Icons.tune, size: 16),
                               label: const Text('Filters'),
                               onPressed: () => _showFilterSheet(context),
-                              backgroundColor: (selectedYear != null || selectedTypes.isNotEmpty)
-                                  ? Theme.of(context).colorScheme.primaryContainer
-                                  : null,
+                              backgroundColor:
+                                  (selectedYear != null ||
+                                          selectedTypes.isNotEmpty)
+                                      ? Theme.of(
+                                        context,
+                                      ).colorScheme.primaryContainer
+                                      : null,
                             ),
                             const SizedBox(width: 8),
                             FilterChip(
@@ -561,11 +620,17 @@ class _HomePageState extends State<HomePage> {
                                   filterDocuments(searchQuery);
                                 });
                               },
-                              selectedColor: Colors.purple.withValues(alpha: 0.15),
+                              selectedColor: Colors.purple.withValues(
+                                alpha: 0.15,
+                              ),
                               checkmarkColor: Colors.purple.shade800,
                               labelStyle: TextStyle(
-                                color: filterMidSem ? Colors.purple.shade800 : null,
-                                fontWeight: filterMidSem ? FontWeight.w600 : null,
+                                color:
+                                    filterMidSem
+                                        ? Colors.purple.shade800
+                                        : null,
+                                fontWeight:
+                                    filterMidSem ? FontWeight.w600 : null,
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -578,11 +643,15 @@ class _HomePageState extends State<HomePage> {
                                   filterDocuments(searchQuery);
                                 });
                               },
-                              selectedColor: Colors.green.withValues(alpha: 0.15),
+                              selectedColor: Colors.green.withValues(
+                                alpha: 0.15,
+                              ),
                               checkmarkColor: Colors.green.shade800,
                               labelStyle: TextStyle(
-                                color: filterEndSem ? Colors.green.shade800 : null,
-                                fontWeight: filterEndSem ? FontWeight.w600 : null,
+                                color:
+                                    filterEndSem ? Colors.green.shade800 : null,
+                                fontWeight:
+                                    filterEndSem ? FontWeight.w600 : null,
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -598,11 +667,19 @@ class _HomePageState extends State<HomePage> {
                                       filterDocuments(searchQuery);
                                     });
                                   },
-                                  selectedColor: Colors.blue.withValues(alpha: 0.15),
+                                  selectedColor: Colors.blue.withValues(
+                                    alpha: 0.15,
+                                  ),
                                   checkmarkColor: Colors.blue.shade800,
                                   labelStyle: TextStyle(
-                                    color: selectedYear == year ? Colors.blue.shade800 : null,
-                                    fontWeight: selectedYear == year ? FontWeight.w600 : null,
+                                    color:
+                                        selectedYear == year
+                                            ? Colors.blue.shade800
+                                            : null,
+                                    fontWeight:
+                                        selectedYear == year
+                                            ? FontWeight.w600
+                                            : null,
                                   ),
                                 ),
                               ),
@@ -612,15 +689,22 @@ class _HomePageState extends State<HomePage> {
                     ),
                     const SizedBox(width: 8),
                     IconButton.filledTonal(
-                      icon: Icon(isGridView ? Icons.view_list : Icons.grid_view),
+                      icon: Icon(
+                        isGridView ? Icons.view_list : Icons.grid_view,
+                      ),
                       onPressed: () => setState(() => isGridView = !isGridView),
-                      tooltip: isGridView ? 'Switch to List View' : 'Switch to Grid View',
+                      tooltip:
+                          isGridView
+                              ? 'Switch to List View'
+                              : 'Switch to Grid View',
                     ),
                     const SizedBox(width: 8),
                     IconButton.filledTonal(
-                      icon: Icon(Theme.of(context).brightness == Brightness.dark 
-                          ? Icons.light_mode 
-                          : Icons.dark_mode),
+                      icon: Icon(
+                        Theme.of(context).brightness == Brightness.dark
+                            ? Icons.light_mode
+                            : Icons.dark_mode,
+                      ),
                       onPressed: widget.onThemeToggle,
                       tooltip: 'Toggle Theme',
                     ),
@@ -647,70 +731,72 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                 Expanded(
-                  child: errorMessage != null
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(
-                                Icons.error_outline,
-                                size: 64,
-                                color: Colors.red,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'Error Loading Courses',
-                                style:
-                                    Theme.of(context).textTheme.headlineSmall,
-                              ),
-                              const SizedBox(height: 8),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 32,
+                  child:
+                      errorMessage != null
+                          ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.error_outline,
+                                  size: 64,
+                                  color: Colors.red,
                                 ),
-                                child: Text(
-                                  errorMessage!,
-                                  textAlign: TextAlign.center,
-                                  style: Theme.of(context).textTheme.bodyMedium,
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Error Loading Courses',
+                                  style:
+                                      Theme.of(context).textTheme.headlineSmall,
                                 ),
-                              ),
-                              const SizedBox(height: 16),
-                              ElevatedButton(
-                                onPressed: () {
-                                  _loadCourses();
-                                },
-                                child: const Text('Retry'),
-                              ),
-                            ],
-                          ),
-                        )
-                      : courses.isEmpty && isStreamComplete
-                      ? const Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.school_outlined,
-                                size: 64,
-                                color: Colors.grey,
-                              ),
-                              SizedBox(height: 16),
-                              Text(
-                                'No Courses Available',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
+                                const SizedBox(height: 8),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 32,
+                                  ),
+                                  child: Text(
+                                    errorMessage!,
+                                    textAlign: TextAlign.center,
+                                    style:
+                                        Theme.of(context).textTheme.bodyMedium,
+                                  ),
                                 ),
-                              ),
-                              SizedBox(height: 8),
-                              Text(
-                                'No course materials have been uploaded yet.',
-                                style: TextStyle(color: Colors.grey),
-                              ),
-                            ],
-                          ),
-                        )
-                      : _buildCoursesView(context),
+                                const SizedBox(height: 16),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    _loadCourses();
+                                  },
+                                  child: const Text('Retry'),
+                                ),
+                              ],
+                            ),
+                          )
+                          : courses.isEmpty && isStreamComplete
+                          ? const Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.school_outlined,
+                                  size: 64,
+                                  color: Colors.grey,
+                                ),
+                                SizedBox(height: 16),
+                                Text(
+                                  'No Courses Available',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                SizedBox(height: 8),
+                                Text(
+                                  'No course materials have been uploaded yet.',
+                                  style: TextStyle(color: Colors.grey),
+                                ),
+                              ],
+                            ),
+                          )
+                          : _buildCoursesView(context),
                 ),
               ],
             ),
@@ -747,7 +833,8 @@ class _HomePageState extends State<HomePage> {
                         children: [
                           Text(
                             'Detailed Filters',
-                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                            style: Theme.of(context).textTheme.headlineSmall
+                                ?.copyWith(fontWeight: FontWeight.bold),
                           ),
                           TextButton(
                             onPressed: () {
@@ -765,48 +852,65 @@ class _HomePageState extends State<HomePage> {
                         ],
                       ),
                       const SizedBox(height: 24),
-                      Text('Academic Year', style: Theme.of(context).textTheme.titleMedium),
+                      Text(
+                        'Academic Year',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
                       const SizedBox(height: 12),
                       Wrap(
                         spacing: 8,
-                        children: ['2025-26', '2024-25', '2023-24', '2022-23'].map((year) {
-                          final isSelected = selectedYear == year;
-                          return ChoiceChip(
-                            label: Text(year),
-                            selected: isSelected,
-                            onSelected: (val) {
-                              setState(() {
-                                selectedYear = val ? year : null;
-                                filterDocuments(searchController.text);
-                              });
-                              setSheetState(() {});
-                            },
-                          );
-                        }).toList(),
+                        children:
+                            ['2025-26', '2024-25', '2023-24', '2022-23'].map((
+                              year,
+                            ) {
+                              final isSelected = selectedYear == year;
+                              return ChoiceChip(
+                                label: Text(year),
+                                selected: isSelected,
+                                onSelected: (val) {
+                                  setState(() {
+                                    selectedYear = val ? year : null;
+                                    filterDocuments(searchController.text);
+                                  });
+                                  setSheetState(() {});
+                                },
+                              );
+                            }).toList(),
                       ),
                       const SizedBox(height: 24),
-                      Text('Paper Type', style: Theme.of(context).textTheme.titleMedium),
+                      Text(
+                        'Paper Type',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
                       const SizedBox(height: 12),
                       Wrap(
                         spacing: 8,
-                        children: ['Assignment', 'Lab', 'Quiz', 'Supplementary', 'Makeup', 'Notes'].map((type) {
-                          final isSelected = selectedTypes.contains(type);
-                          return FilterChip(
-                            label: Text(type),
-                            selected: isSelected,
-                            onSelected: (val) {
-                              setState(() {
-                                if (val) {
-                                  selectedTypes.add(type);
-                                } else {
-                                  selectedTypes.remove(type);
-                                }
-                                filterDocuments(searchController.text);
-                              });
-                              setSheetState(() {});
-                            },
-                          );
-                        }).toList(),
+                        children:
+                            [
+                              'Assignment',
+                              'Lab',
+                              'Quiz',
+                              'Supplementary',
+                              'Makeup',
+                              'Notes',
+                            ].map((type) {
+                              final isSelected = selectedTypes.contains(type);
+                              return FilterChip(
+                                label: Text(type),
+                                selected: isSelected,
+                                onSelected: (val) {
+                                  setState(() {
+                                    if (val) {
+                                      selectedTypes.add(type);
+                                    } else {
+                                      selectedTypes.remove(type);
+                                    }
+                                    filterDocuments(searchController.text);
+                                  });
+                                  setSheetState(() {});
+                                },
+                              );
+                            }).toList(),
                       ),
                       const SizedBox(height: 24),
                       SizedBox(

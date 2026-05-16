@@ -6,10 +6,7 @@ import '../utils/string_extensions.dart';
 class CourseCard extends StatelessWidget {
   final Course course;
 
-  const CourseCard({
-    super.key,
-    required this.course,
-  });
+  const CourseCard({super.key, required this.course});
 
   IconData _getCategoryIcon(String courseId) {
     final id = courseId.toUpperCase();
@@ -42,7 +39,7 @@ class CourseCard extends StatelessWidget {
     final courseCode = course.joinedCourseIds.toUpperCase();
 
     final papers = course.papers;
-    
+
     // Categorize papers
     int midCount = 0;
     int endCount = 0;
@@ -57,7 +54,9 @@ class CourseCard extends StatelessWidget {
         endCount++;
       } else if (label.contains('makeup') || label.contains('supple')) {
         suppCount++;
-      } else if (label.contains('assign') || label.contains('lab') || label.contains('note')) {
+      } else if (label.contains('assign') ||
+          label.contains('lab') ||
+          label.contains('note')) {
         assignCount++;
       }
     }
@@ -90,7 +89,9 @@ class CourseCard extends StatelessWidget {
                       width: 52,
                       height: 52,
                       decoration: BoxDecoration(
-                        color: _getCategoryColor(course.primaryCourseId).withValues(alpha: 0.1),
+                        color: _getCategoryColor(
+                          course.primaryCourseId,
+                        ).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: Icon(
@@ -167,8 +168,8 @@ class CourseCard extends StatelessWidget {
                   elevation: 0,
                 ),
                 child: const Text(
-                  'Explore Resources', 
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)
+                  'Explore Resources',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                 ),
               ),
             ),
@@ -211,7 +212,9 @@ class CourseCard extends StatelessWidget {
                   ),
                   Text(
                     'Course Resources',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -222,37 +225,54 @@ class CourseCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
                   Expanded(
-                    child: course.papers.isEmpty
-                        ? const Center(child: Text('No papers available yet.'))
-                        : ListView.separated(
-                            controller: scrollController,
-                            itemCount: course.papers.length,
-                            separatorBuilder: (context, index) => const Divider(height: 1),
-                            itemBuilder: (context, index) {
-                              final paper = course.papers[index];
-                              return ListTile(
-                                contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                                leading: Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                                    borderRadius: BorderRadius.circular(12),
+                    child:
+                        course.papers.isEmpty
+                            ? const Center(
+                              child: Text('No papers available yet.'),
+                            )
+                            : ListView.separated(
+                              controller: scrollController,
+                              itemCount: course.papers.length,
+                              separatorBuilder:
+                                  (context, index) => const Divider(height: 1),
+                              itemBuilder: (context, index) {
+                                final paper = course.papers[index];
+                                return ListTile(
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    vertical: 8,
                                   ),
-                                  child: const Icon(Icons.picture_as_pdf_outlined),
-                                ),
-                                title: Text(
-                                  paper.label,
-                                  style: const TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                                subtitle: Text('Year: ${paper.paperSuffix}'),
-                                trailing: const Icon(Icons.chevron_right),
-                                onTap: () {
-                                  Navigator.pop(context);
-                                  Navigator.pushNamed(context, '/pdf_viewer', arguments: PyqDataService.paperUrl(paper));
-                                },
-                              );
-                            },
-                          ),
+                                  leading: Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color:
+                                          Theme.of(
+                                            context,
+                                          ).colorScheme.surfaceContainerHighest,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: const Icon(
+                                      Icons.picture_as_pdf_outlined,
+                                    ),
+                                  ),
+                                  title: Text(
+                                    paper.label,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  subtitle: Text('Year: ${paper.paperSuffix}'),
+                                  trailing: const Icon(Icons.chevron_right),
+                                  onTap: () {
+                                    Navigator.pop(context);
+                                    Navigator.pushNamed(
+                                      context,
+                                      '/pdf_viewer',
+                                      arguments: PyqDataService.paperUrl(paper),
+                                    );
+                                  },
+                                );
+                              },
+                            ),
                   ),
                 ],
               ),
@@ -268,10 +288,7 @@ class _StatBox extends StatelessWidget {
   final String label;
   final String value;
 
-  const _StatBox({
-    required this.label,
-    required this.value,
-  });
+  const _StatBox({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
