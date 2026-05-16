@@ -14,34 +14,34 @@ class PaperButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveFontSize = fontSize ?? 13.0;
-    final iconSize = effectiveFontSize * 1.2;
-    final borderRadius = effectiveFontSize * 1.5;
-    final horizontalPadding = effectiveFontSize * 1.0;
-    final verticalPadding = effectiveFontSize * 0.5;
+    final theme = Theme.of(context);
+    final effectiveFontSize = fontSize ?? 12.5;
 
     return ElevatedButton.icon(
       onPressed: () {
-        // Use named route navigation with arguments to hide the URL from the address bar
         Navigator.pushNamed(context, '/pdf_viewer', arguments: url);
       },
-      icon: Icon(Icons.picture_as_pdf, size: iconSize),
+      icon: Icon(Icons.picture_as_pdf_outlined, size: effectiveFontSize * 1.2),
       label: Text(
         label,
-        style: TextStyle(fontSize: effectiveFontSize),
-        overflow: TextOverflow.ellipsis,
-        maxLines: 1,
+        style: TextStyle(
+          fontSize: effectiveFontSize,
+          fontWeight: FontWeight.w500,
+          height: 1.2,
+        ),
+        softWrap: true,
+        textAlign: TextAlign.center,
       ),
       style: ElevatedButton.styleFrom(
-        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-        foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
+        backgroundColor: theme.colorScheme.primaryContainer,
+        foregroundColor: theme.colorScheme.onPrimaryContainer,
+        elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(borderRadius),
+          borderRadius: BorderRadius.circular(20),
         ),
-        padding: EdgeInsets.symmetric(
-          horizontal: horizontalPadding,
-          vertical: verticalPadding,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        minimumSize: const Size(0, 32),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
     );
   }

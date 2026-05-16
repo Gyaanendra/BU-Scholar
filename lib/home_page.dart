@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'models/course.dart';
@@ -25,6 +26,15 @@ class _HomePageState extends State<HomePage> {
   int totalCourses = 0;
   int loadedCourses = 0;
   String? errorMessage;
+  final Set<int> _expandedCourseNums = {};
+
+  void _toggleCourseExpanded(int courseNum) {
+    setState(() {
+      if (!_expandedCourseNums.remove(courseNum)) {
+        _expandedCourseNums.add(courseNum);
+      }
+    });
+  }
 
   @override
   void initState() {
@@ -136,24 +146,38 @@ class _HomePageState extends State<HomePage> {
     final useGrid = screenWidth >= 900;
 
     if (useGrid) {
-      return GridView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 3,
-          childAspectRatio: 2.0,
-          mainAxisExtent: null,
+      const crossAxisCount = 3;
+      return SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        child: StaggeredGrid.count(
+          crossAxisCount: crossAxisCount,
+          mainAxisSpacing: 20,
+          crossAxisSpacing: 20,
+          children: [
+            for (final course in filteredCourses)
+              StaggeredGridTile.fit(
+                crossAxisCellCount: 1,
+                child: CourseCard(
+                  course: course,
+                  isExpanded: _expandedCourseNums.contains(course.courseNum),
+                  onToggleExpand: () => _toggleCourseExpanded(course.courseNum),
+                ),
+              ),
+          ],
         ),
-        itemCount: filteredCourses.length,
-        itemBuilder: (context, index) {
-          return CourseCard(course: filteredCourses[index]);
-        },
       );
     } else {
-      return ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+      return ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         itemCount: filteredCourses.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 12),
         itemBuilder: (context, index) {
-          return CourseCard(course: filteredCourses[index]);
+          final course = filteredCourses[index];
+          return CourseCard(
+            course: course,
+            isExpanded: _expandedCourseNums.contains(course.courseNum),
+            onToggleExpand: () => _toggleCourseExpanded(course.courseNum),
+          );
         },
       );
     }

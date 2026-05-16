@@ -5,113 +5,144 @@ import '../utils/string_extensions.dart';
 import 'paper_button.dart';
 
 class CourseCard extends StatelessWidget {
-  final Course course;
+  static const int _visibleCap = 4;
+  static const double _paperSpacing = 8.0;
 
-  const CourseCard({super.key, required this.course});
+  final Course course;
+  final bool isExpanded;
+  final VoidCallback onToggleExpand;
+
+  const CourseCard({
+    super.key,
+    required this.course,
+    required this.isExpanded,
+    required this.onToggleExpand,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     final courseName = course.name
         .replaceAll('_', ' ')
         .split(' ')
         .map((word) => word.capitalize())
         .join(' ');
-
     final courseCode = course.joinedCourseIds.toUpperCase();
+
     final papers = course.papers;
+    final hasMore = papers.length > _visibleCap;
+    final visiblePapers = (isExpanded || !hasMore)
+        ? papers
+        : papers.take(_visibleCap).toList();
+    final hiddenCount = papers.length - _visibleCap;
 
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       clipBehavior: Clip.antiAlias,
-      margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final cardWidth = constraints.maxWidth;
-
-          final padding = (cardWidth * 0.04).clamp(12.0, 20.0);
-          final availableWidth = cardWidth - (padding * 2);
-
-          final titleFontSize = (cardWidth * 0.045).clamp(14.0, 20.0);
-          final codeFontSize = (cardWidth * 0.03).clamp(11.0, 14.0);
-          final buttonFontSize = (cardWidth * 0.032).clamp(11.0, 13.0);
-
-          final titleCodeSpacing = (cardWidth * 0.01).clamp(2.0, 5.0);
-          final codeButtonSpacing = (cardWidth * 0.02).clamp(6.0, 12.0);
-
-          final buttonHeight = (cardWidth * 0.08).clamp(30.0, 40.0);
-
-          final buttonWidth = papers.isNotEmpty
-              ? (availableWidth / papers.length.clamp(1, 3)) - 8
-              : availableWidth;
-
-          return Padding(
-            padding: EdgeInsets.all(padding),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Flexible(
-                  child: Text(
-                    courseName,
-                    style: TextStyle(
-                      fontSize: titleFontSize,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+      margin: EdgeInsets.zero,
+      child: AnimatedSize(
+        duration: const Duration(milliseconds: 260),
+        curve: Curves.easeOut,
+        alignment: Alignment.topCenter,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                courseName,
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                  height: 1.25,
                 ),
-                SizedBox(height: titleCodeSpacing),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                courseCode,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontStyle: FontStyle.italic,
+                  color: theme.colorScheme.primary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              if (papers.isEmpty)
                 Text(
-                  courseCode,
+                  'No papers available',
                   style: TextStyle(
-                    fontSize: codeFontSize,
+                    fontSize: 12,
+                    color: Colors.grey,
                     fontStyle: FontStyle.italic,
-                    color: Theme.of(context).colorScheme.primary,
                   ),
+                  textAlign: TextAlign.center,
+                )
+              else
+                Wrap(
+                  spacing: _paperSpacing,
+                  runSpacing: _paperSpacing,
+                  alignment: WrapAlignment.center,
+                  children: [
+                    for (final paper in visiblePapers)
+                      PaperButton(
+                        label: paper.label,
+                        url: PyqDataService.paperUrl(paper),
+                      ),
+                    if (hasMore)
+                      _ToggleButton(
+                        label: isExpanded
+                            ? 'Show less'
+                            : '+$hiddenCount more',
+                        expanded: isExpanded,
+                        onTap: onToggleExpand,
+                      ),
+                  ],
                 ),
-                SizedBox(height: codeButtonSpacing),
-                if (papers.isNotEmpty)
-                  Flexible(
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: papers.map((paper) {
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 8.0),
-                            child: SizedBox(
-                              width: buttonWidth,
-                              height: buttonHeight,
-                              child: PaperButton(
-                                label: paper.label,
-                                url: PyqDataService.paperUrl(paper),
-                                fontSize: buttonFontSize,
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                  )
-                else
-                  Padding(
-                    padding: EdgeInsets.symmetric(vertical: padding * 0.25),
-                    child: Text(
-                      'No papers available',
-                      style: TextStyle(
-                        fontSize: codeFontSize * 0.9,
-                        color: Colors.grey,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          );
-        },
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ToggleButton extends StatelessWidget {
+  final String label;
+  final bool expanded;
+  final VoidCallback onTap;
+
+  const _ToggleButton({
+    required this.label,
+    required this.expanded,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return TextButton.icon(
+      onPressed: onTap,
+      icon: Icon(
+        expanded ? Icons.expand_less : Icons.expand_more,
+        size: 16,
+      ),
+      label: Text(
+        label,
+        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+      ),
+      style: TextButton.styleFrom(
+        foregroundColor: theme.colorScheme.primary,
+        backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.08),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        minimumSize: const Size(0, 32),
       ),
     );
   }
