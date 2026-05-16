@@ -205,7 +205,7 @@ class _HomePageState extends State<HomePage> {
       return ListView.separated(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         itemCount: filteredCourses.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
+        separatorBuilder: (_, _) => const SizedBox(height: 12),
         itemBuilder: (context, index) {
           final course = filteredCourses[index];
           return CourseCard(
