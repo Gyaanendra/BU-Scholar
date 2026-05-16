@@ -33,9 +33,16 @@ class PyqDataService {
 
     for (final course in data.courses) {
       course.papers.sort((a, b) {
-        final byYear = b.paperYear.compareTo(a.paperYear);
-        if (byYear != 0) return byYear;
-        return a.paperName.compareTo(b.paperName);
+        final ay = a.yearOrNull;
+        final by = b.yearOrNull;
+        if (ay != null && by != null) {
+          final yearCmp = by.compareTo(ay);
+          if (yearCmp != 0) return yearCmp;
+          return a.paperName.compareTo(b.paperName);
+        }
+        if (ay != null) return -1;
+        if (by != null) return 1;
+        return a.paperNum.compareTo(b.paperNum);
       });
     }
 

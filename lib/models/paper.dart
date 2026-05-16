@@ -7,8 +7,8 @@ class Paper {
   @JsonKey(name: 'paper_name')
   final String paperName;
 
-  @JsonKey(name: 'paper_year')
-  final int paperYear;
+  @JsonKey(name: 'paper_suffix')
+  final String paperSuffix;
 
   @JsonKey(name: 'paper_id')
   final String paperId;
@@ -18,7 +18,7 @@ class Paper {
 
   const Paper({
     required this.paperName,
-    required this.paperYear,
+    required this.paperSuffix,
     required this.paperId,
     required this.paperNum,
   });
@@ -27,5 +27,7 @@ class Paper {
 
   Map<String, dynamic> toJson() => _$PaperToJson(this);
 
-  String get label => '$paperName $paperYear';
+  String get label => '$paperName $paperSuffix';
+
+  int? get yearOrNull => int.tryParse(paperSuffix);
 }

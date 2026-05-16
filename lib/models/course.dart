@@ -29,5 +29,5 @@ class Course {
 
   String get primaryCourseId => courseId.isNotEmpty ? courseId.first : '';
 
-  String get joinedCourseIds => courseId.join(' / ');
+  String get joinedCourseIds => courseId.join(', ');
 }
