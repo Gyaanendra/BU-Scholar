@@ -17,6 +17,9 @@ class ContributeFooterCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmall = screenWidth < 450;
+
     return Card(
       elevation: 0,
       color: theme.colorScheme.primaryContainer.withValues(alpha: 0.45),
@@ -31,27 +34,31 @@ class ContributeFooterCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         onTap: _open,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-          child: Row(
-            children: [
-              Icon(
-                Icons.handshake_outlined,
-                color: theme.colorScheme.primary,
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
+          padding: EdgeInsets.symmetric(
+            horizontal: isSmall ? 16 : 20,
+            vertical: isSmall ? 16 : 14,
+          ),
+          child: isSmall
+              ? Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
-                      'Found this useful?',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.handshake_outlined,
+                          color: theme.colorScheme.primary,
+                        ),
+                        const SizedBox(width: 10),
+                        const Text(
+                          'Found this useful?',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 8),
                     Text(
                       'Help fellow students — contribute the papers you have.',
                       style: TextStyle(
@@ -61,17 +68,62 @@ class ContributeFooterCard extends StatelessWidget {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed: _open,
+                        icon: const Icon(Icons.open_in_new, size: 16),
+                        label: const Text('Contribute'),
+                        style: FilledButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              : Row(
+                  children: [
+                    Icon(
+                      Icons.handshake_outlined,
+                      color: theme.colorScheme.primary,
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text(
+                            'Found this useful?',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Help fellow students — contribute the papers you have.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: theme.colorScheme.onSurface.withValues(
+                                alpha: 0.7,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    TextButton.icon(
+                      onPressed: _open,
+                      icon: const Icon(Icons.open_in_new, size: 16),
+                      label: const Text('Contribute'),
+                    ),
                   ],
                 ),
-              ),
-              const SizedBox(width: 12),
-              TextButton.icon(
-                onPressed: _open,
-                icon: const Icon(Icons.open_in_new, size: 16),
-                label: const Text('Contribute'),
-              ),
-            ],
-          ),
         ),
       ),
     );

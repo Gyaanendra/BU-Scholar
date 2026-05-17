@@ -3,10 +3,40 @@ import '../models/course.dart';
 import '../services/pyq_data_service.dart';
 import '../utils/string_extensions.dart';
 
-class CourseCard extends StatelessWidget {
+class CourseCard extends StatefulWidget {
   final Course course;
 
   const CourseCard({super.key, required this.course});
+
+  @override
+  State<CourseCard> createState() => _CourseCardState();
+}
+
+class _CourseCardState extends State<CourseCard> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 120),
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.97).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeOutCubic,
+        reverseCurve: Curves.easeInCubic,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   IconData _getCategoryIcon(String courseId) {
     final id = courseId.toUpperCase();
@@ -31,14 +61,14 @@ class CourseCard extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final courseName = course.name
+    final courseName = widget.course.name
         .replaceAll('_', ' ')
         .split(' ')
         .map((word) => word.capitalize())
         .join(' ');
-    final courseCode = course.joinedCourseIds.toUpperCase();
+    final courseCode = widget.course.joinedCourseIds.toUpperCase();
 
-    final papers = course.papers;
+    final papers = widget.course.papers;
 
     // Categorize papers
     int midCount = 0;
@@ -61,119 +91,137 @@ class CourseCard extends StatelessWidget {
       }
     }
 
-    return Card(
-      elevation: 0,
-      color: theme.colorScheme.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
-        side: BorderSide(
-          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
-          width: 1.5,
-        ),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            // Top Section: Icon and Name
-            Column(
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
+    final isCompactMobile = screenWidth < 380;
+
+    return GestureDetector(
+      onTapDown: (_) => _controller.forward(),
+      onTapUp: (_) => _controller.reverse(),
+      onTapCancel: () => _controller.reverse(),
+      onTap: () => _showCourseOptions(context),
+      behavior: HitTestBehavior.opaque,
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: Card(
+          elevation: 0,
+          color: theme.colorScheme.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(isCompactMobile ? 18 : 24),
+            side: BorderSide(
+              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+              width: 1.5,
+            ),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Padding(
+            padding: EdgeInsets.all(isCompactMobile ? 12 : (isMobile ? 16 : 20)),
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
+                // Top Section: Icon and Name
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: 52,
-                      height: 52,
-                      decoration: BoxDecoration(
-                        color: _getCategoryColor(
-                          course.primaryCourseId,
-                        ).withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Icon(
-                        _getCategoryIcon(course.primaryCourseId),
-                        size: 28,
-                        color: _getCategoryColor(course.primaryCourseId),
-                      ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: isCompactMobile ? 40 : 52,
+                          height: isCompactMobile ? 40 : 52,
+                          decoration: BoxDecoration(
+                            color: _getCategoryColor(
+                              widget.course.primaryCourseId,
+                            ).withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(isCompactMobile ? 10 : 14),
+                          ),
+                          child: Icon(
+                            _getCategoryIcon(widget.course.primaryCourseId),
+                            size: isCompactMobile ? 22 : 28,
+                            color: _getCategoryColor(widget.course.primaryCourseId),
+                          ),
+                        ),
+                        SizedBox(width: isCompactMobile ? 10 : 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                courseName,
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: isCompactMobile ? 15 : (isMobile ? 16 : 18),
+                                  height: 1.1,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                courseCode,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                  fontSize: isCompactMobile ? 10 : 12,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            courseName,
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                              height: 1.1,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            courseCode,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ],
-                      ),
+                    SizedBox(height: isCompactMobile ? 12 : 20),
+                    // Stats 2x2 Grid
+                    Column(
+                      children: [
+                        Row(
+                          children: [
+                            _StatBox(label: 'MID SEMESTER', value: '$midCount'),
+                            SizedBox(width: isCompactMobile ? 6 : 10),
+                            _StatBox(label: 'END SEMESTER', value: '$endCount'),
+                          ],
+                        ),
+                        SizedBox(height: isCompactMobile ? 6 : 10),
+                        Row(
+                          children: [
+                            _StatBox(label: 'SUPP / MAKE', value: '$suppCount'),
+                            SizedBox(width: isCompactMobile ? 6 : 10),
+                            _StatBox(label: 'ASSIGN / LAB', value: '$assignCount'),
+                          ],
+                        ),
+                      ],
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
-                // Stats 2x2 Grid
-                Column(
-                  children: [
-                    Row(
-                      children: [
-                        _StatBox(label: 'MID SEMESTER', value: '$midCount'),
-                        const SizedBox(width: 10),
-                        _StatBox(label: 'END SEMESTER', value: '$endCount'),
-                      ],
+                SizedBox(height: isCompactMobile ? 12 : 16),
+                // Bottom Action Button
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () => _showCourseOptions(context),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: isDark ? Colors.white : Colors.black,
+                      foregroundColor: isDark ? Colors.black : Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(isCompactMobile ? 12 : 16),
+                      ),
+                      padding: EdgeInsets.symmetric(vertical: isCompactMobile ? 10 : 14),
+                      elevation: 0,
                     ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        _StatBox(label: 'SUPP / MAKE', value: '$suppCount'),
-                        const SizedBox(width: 10),
-                        _StatBox(label: 'ASSIGN / LAB', value: '$assignCount'),
-                      ],
+                    child: Text(
+                      'Explore Resources',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: isCompactMobile ? 13 : 15,
+                      ),
                     ),
-                  ],
+                  ),
                 ),
               ],
             ),
-            // Bottom Action Button
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: () => _showCourseOptions(context),
-                style: FilledButton.styleFrom(
-                  backgroundColor: isDark ? Colors.white : Colors.black,
-                  foregroundColor: isDark ? Colors.black : Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  elevation: 0,
-                ),
-                child: const Text(
-                  'Explore Resources',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -218,7 +266,7 @@ class CourseCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    course.name.capitalizeAll(),
+                    widget.course.name.capitalizeAll(),
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
@@ -226,17 +274,17 @@ class CourseCard extends StatelessWidget {
                   const SizedBox(height: 24),
                   Expanded(
                     child:
-                        course.papers.isEmpty
+                        widget.course.papers.isEmpty
                             ? const Center(
                               child: Text('No papers available yet.'),
                             )
                             : ListView.separated(
                               controller: scrollController,
-                              itemCount: course.papers.length,
+                              itemCount: widget.course.papers.length,
                               separatorBuilder:
                                   (context, index) => const Divider(height: 1),
                               itemBuilder: (context, index) {
-                                final paper = course.papers[index];
+                                final paper = widget.course.papers[index];
                                 return ListTile(
                                   contentPadding: const EdgeInsets.symmetric(
                                     vertical: 8,
@@ -293,12 +341,18 @@ class _StatBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isCompactMobile = screenWidth < 380;
+
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+        padding: EdgeInsets.symmetric(
+          vertical: isCompactMobile ? 6 : 10,
+          horizontal: isCompactMobile ? 6 : 12,
+        ),
         decoration: BoxDecoration(
           color: theme.colorScheme.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(isCompactMobile ? 8 : 12),
           border: Border.all(
             color: theme.colorScheme.outlineVariant.withValues(alpha: 0.25),
           ),
@@ -311,20 +365,20 @@ class _StatBox extends StatelessWidget {
                 label,
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
-                  fontSize: 10,
+                  fontSize: isCompactMobile ? 7.5 : 9.5,
                   fontWeight: FontWeight.w700,
-                  letterSpacing: 0.2,
+                  letterSpacing: isCompactMobile ? 0.0 : 0.2,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            const SizedBox(width: 4),
+            SizedBox(width: isCompactMobile ? 2 : 4),
             Text(
               value,
               style: theme.textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.bold,
-                fontSize: 15,
+                fontSize: isCompactMobile ? 12 : 15,
                 color: theme.colorScheme.onSurface,
               ),
             ),

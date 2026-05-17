@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../models/course.dart';
-import '../services/pyq_data_service.dart';
 import '../utils/string_extensions.dart';
 
 class CourseListTile extends StatelessWidget {
@@ -14,46 +13,6 @@ class CourseListTile extends StatelessWidget {
     this.isExpanded = false,
     required this.onTap,
   });
-
-  String _shortenLabel(String label, String suffix) {
-    String shortLabel = label;
-    if (label.toLowerCase().contains('end semester')) {
-      shortLabel = 'End';
-    } else if (label.toLowerCase().contains('mid semester')) {
-      shortLabel = 'Mid';
-    } else if (label.toLowerCase().contains('assignment')) {
-      shortLabel = 'Asgn';
-    } else if (label.toLowerCase().contains('quiz')) {
-      shortLabel = 'Quiz';
-    } else if (label.toLowerCase().contains('supplementary')) {
-      shortLabel = 'Supp';
-    } else if (label.toLowerCase().contains('makeup')) {
-      shortLabel = 'Mkup';
-    }
-
-    String shortSuffix = suffix;
-    if (suffix.length >= 4) {
-      if (suffix.contains('-')) {
-        final parts = suffix.split('-');
-        shortSuffix = '${parts[0].substring(parts[0].length - 2)}-${parts[1].substring(parts[1].length - 2)}';
-      } else {
-        shortSuffix = suffix.substring(suffix.length - 2);
-      }
-    }
-
-    return '$shortLabel $shortSuffix';
-  }
-
-  MaterialColor _getPaperColor(String label) {
-    final lower = label.toLowerCase();
-    if (lower.contains('end semester')) return Colors.green;
-    if (lower.contains('mid semester')) return Colors.purple;
-    if (lower.contains('assignment') || lower.contains('nptel')) return Colors.indigo;
-    if (lower.contains('lab')) return Colors.teal;
-    if (lower.contains('quiz')) return Colors.orange;
-    if (lower.contains('supplementary') || lower.contains('makeup')) return Colors.deepPurple;
-    return Colors.blueGrey;
-  }
 
   IconData _getCategoryIcon(String courseId) {
     final id = courseId.toUpperCase();

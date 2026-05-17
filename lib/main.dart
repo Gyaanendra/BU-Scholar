@@ -47,7 +47,7 @@ class _MainAppState extends State<MainApp> {
       _accentColor = color;
     });
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('accent_color', color.value);
+    await prefs.setInt('accent_color', color.toARGB32());
   }
 
   Future<void> _toggleTheme() async {

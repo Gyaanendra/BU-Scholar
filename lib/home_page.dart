@@ -98,7 +98,7 @@ class _HomePageState extends State<HomePage> {
                 itemBuilder: (context, index) {
                   final color = colors[index];
                   final isSelected =
-                      widget.currentAccentColor.value == color.value;
+                      widget.currentAccentColor == color;
                   return GestureDetector(
                     onTap: () {
                       widget.onAccentColorChange(color);
@@ -300,45 +300,102 @@ class _HomePageState extends State<HomePage> {
   Widget _buildCoursesView(BuildContext context) {
     if (filteredCourses.isEmpty && isStreamComplete) {
       return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.search_off, size: 64, color: Colors.grey.shade400),
-              const SizedBox(height: 16),
-              Text(
-                'No matches for "$searchQuery"',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(28),
+          child: TweenAnimationBuilder<double>(
+            tween: Tween<double>(begin: 0.0, end: 1.0),
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeOutCubic,
+            builder: (context, value, child) {
+              return Transform.scale(
+                scale: 0.95 + (0.05 * value),
+                child: Opacity(
+                  opacity: value,
+                  child: child,
                 ),
-                textAlign: TextAlign.center,
+              );
+            },
+            child: Card(
+              elevation: 0,
+              color: Theme.of(context).colorScheme.surfaceContainerLow.withValues(alpha: 0.8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(28),
+                side: BorderSide(
+                  color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.3),
+                  width: 1.5,
+                ),
               ),
-              const SizedBox(height: 6),
-              Text(
-                'Try a different course name or code',
-                style: TextStyle(color: Colors.grey.shade600),
-                textAlign: TextAlign.center,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Glow ring icon container
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
+                          width: 2,
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.find_in_page_outlined,
+                        size: 40,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      'No matches for "$searchQuery"',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Try refiltering or searching a different term. Reset everything to see all available papers!',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    FilledButton.icon(
+                      onPressed: () {
+                        setState(() {
+                          searchController.clear();
+                          filterMidSem = false;
+                          filterEndSem = false;
+                          selectedYear = null;
+                          selectedTypes.clear();
+                          filterDocuments('');
+                        });
+                      },
+                      icon: const Icon(Icons.refresh_rounded, size: 18),
+                      label: const Text('Reset Everything'),
+                      style: FilledButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 12),
-              TextButton.icon(
-                onPressed: () {
-                  searchController.clear();
-                  filterDocuments('');
-                },
-                icon: const Icon(Icons.clear),
-                label: const Text('Clear search'),
-              ),
-            ],
+            ),
           ),
         ),
       );
     }
 
     final screenWidth = MediaQuery.of(context).size.width;
-
-    int crossAxisCount = isGridView ? 2 : 1;
     final Map<String, List<Course>> groupedCourses = {};
     final List<String> categoriesOrder = [
       'CS CORE',
@@ -392,78 +449,132 @@ class _HomePageState extends State<HomePage> {
             if (isGridView)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: GridView.count(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount:
-                      screenWidth >= 1200 ? 4 : (screenWidth >= 700 ? 3 : 2),
-                  mainAxisSpacing: 16,
-                  crossAxisSpacing: 16,
-                  childAspectRatio:
-                      screenWidth >= 1200
-                          ? 1.2
-                          : (screenWidth >= 700 ? 1.0 : 0.72),
-                  children: [
-                    for (final course in categoryCourses)
-                      CourseCard(course: course),
-                  ],
-                ),
+                child: screenWidth >= 480
+                    ? GridView.count(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        crossAxisCount: screenWidth >= 1200
+                            ? 4
+                            : (screenWidth >= 700 ? 3 : 2),
+                        mainAxisSpacing: 16,
+                        crossAxisSpacing: 16,
+                        childAspectRatio: screenWidth >= 1200
+                            ? 1.2
+                            : (screenWidth >= 700 ? 1.0 : 0.72),
+                        children: [
+                          for (final course in categoryCourses)
+                            TweenAnimationBuilder<double>(
+                              key: ValueKey(course.courseNum),
+                              tween: Tween<double>(begin: 0.0, end: 1.0),
+                              duration: const Duration(milliseconds: 350),
+                              curve: Curves.easeOutCubic,
+                              builder: (context, value, child) {
+                                return Transform.translate(
+                                  offset: Offset(0, 12 * (1.0 - value)),
+                                  child: Opacity(
+                                    opacity: value,
+                                    child: child,
+                                  ),
+                                );
+                              },
+                              child: CourseCard(course: course),
+                            ),
+                        ],
+                      )
+                    : Column(
+                        children: [
+                          for (final course in categoryCourses) ...[
+                            TweenAnimationBuilder<double>(
+                              key: ValueKey(course.courseNum),
+                              tween: Tween<double>(begin: 0.0, end: 1.0),
+                              duration: const Duration(milliseconds: 350),
+                              curve: Curves.easeOutCubic,
+                              builder: (context, value, child) {
+                                return Transform.translate(
+                                  offset: Offset(0, 12 * (1.0 - value)),
+                                  child: Opacity(
+                                    opacity: value,
+                                    child: child,
+                                  ),
+                                );
+                              },
+                              child: CourseCard(course: course),
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                        ],
+                      ),
               )
             else
-              Card(
-                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                elevation: 0,
-                color: Theme.of(
-                  context,
-                ).colorScheme.surfaceContainerLow.withValues(alpha: 0.5),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: Column(
-                  children: [
-                    for (int i = 0; i < categoryCourses.length; i++) ...[
-                      CourseListTile(
-                        course: categoryCourses[i],
-                        isExpanded: _expandedCourseNums.contains(
-                          categoryCourses[i].courseNum,
+              Column(
+                children: [
+                  for (int i = 0; i < categoryCourses.length; i++) ...[
+                    (() {
+                      final isExpanded = _expandedCourseNums.contains(categoryCourses[i].courseNum);
+                      return AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.fastOutSlowIn,
+                        margin: EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: isExpanded ? 8 : 4,
                         ),
-                        onTap:
-                            () => _toggleCourseExpanded(
-                              categoryCourses[i].courseNum,
+                        decoration: BoxDecoration(
+                          color: isExpanded
+                              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.05)
+                              : Theme.of(context).colorScheme.surfaceContainerLow.withValues(alpha: 0.5),
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(
+                            color: isExpanded
+                                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)
+                                : Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.2),
+                            width: isExpanded ? 1.5 : 1.0,
+                          ),
+                          boxShadow: isExpanded
+                              ? [
+                                  BoxShadow(
+                                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
+                                    blurRadius: 16,
+                                    offset: const Offset(0, 4),
+                                  )
+                                ]
+                              : [],
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: Column(
+                          children: [
+                            CourseListTile(
+                              course: categoryCourses[i],
+                              isExpanded: isExpanded,
+                              onTap: () => _toggleCourseExpanded(categoryCourses[i].courseNum),
                             ),
-                      ),
-                      if (_expandedCourseNums.contains(
-                        categoryCourses[i].courseNum,
-                      ))
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                          child: Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children:
-                                categoryCourses[i].papers
-                                    .map(
-                                      (paper) => PaperButton(
-                                        label: paper.label,
-                                        url: PyqDataService.paperUrl(paper),
+                            AnimatedSize(
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.fastOutSlowIn,
+                              alignment: Alignment.topCenter,
+                              child: isExpanded
+                                  ? Padding(
+                                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                                      child: Wrap(
+                                        spacing: 8,
+                                        runSpacing: 8,
+                                        children: categoryCourses[i].papers
+                                            .map(
+                                              (paper) => PaperButton(
+                                                label: paper.label,
+                                                url: PyqDataService.paperUrl(paper),
+                                              ),
+                                            )
+                                            .toList(),
                                       ),
                                     )
-                                    .toList(),
-                          ),
+                                  : const SizedBox(width: double.infinity, height: 0),
+                            ),
+                          ],
                         ),
-                      if (i < categoryCourses.length - 1)
-                        Divider(
-                          height: 1,
-                          indent: 16,
-                          endIndent: 16,
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.outlineVariant.withValues(alpha: 0.5),
-                        ),
-                    ],
+                      );
+                    }()),
                   ],
-                ),
+                ],
               ),
           ],
         );
@@ -473,24 +584,54 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final activeFiltersCount = (selectedYear != null ? 1 : 0) + selectedTypes.length;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              'BU Scholar',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.school_rounded,
+                size: 20,
+                color: Theme.of(context).colorScheme.onPrimaryContainer,
+              ),
             ),
-            Text(
-              'Previous Year Papers',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w400),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'BU Scholar',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                Text(
+                  'Previous Year Papers',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        elevation: 2,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        elevation: 0,
+        scrolledUnderElevation: 1.5,
         centerTitle: false,
         actions: [
           IconButton(
@@ -508,30 +649,46 @@ class _HomePageState extends State<HomePage> {
               );
             },
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: TextButton.icon(
-              onPressed: () async {
-                await launchUrl(Uri.parse("https://github.com/M4dhav"));
-              },
-              icon: SvgPicture.asset(
-                'assets/github-mark.svg',
-                width: 18,
-                height: 18,
-              ),
-              label: const Text(
-                'Made with ❤️ by M4dhav',
-                style: TextStyle(fontSize: 12),
-              ),
-              style: TextButton.styleFrom(
-                foregroundColor: Theme.of(context).colorScheme.onSurface,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
+          screenWidth >= 600
+              ? Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: TextButton.icon(
+                    onPressed: () async {
+                      await launchUrl(Uri.parse("https://github.com/M4dhav"));
+                    },
+                    icon: SvgPicture.asset(
+                      'assets/github-mark.svg',
+                      width: 18,
+                      height: 18,
+                    ),
+                    label: const Text(
+                      'Made with ❤️ by M4dhav',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Theme.of(context).colorScheme.onSurface,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                    ),
+                  ),
+                )
+              : IconButton(
+                  tooltip: 'Made by M4dhav',
+                  icon: SvgPicture.asset(
+                    'assets/github-mark.svg',
+                    width: 20,
+                    height: 20,
+                    colorFilter: ColorFilter.mode(
+                      Theme.of(context).colorScheme.onSurface,
+                      BlendMode.srcIn,
+                    ),
+                  ),
+                  onPressed: () async {
+                    await launchUrl(Uri.parse("https://github.com/M4dhav"));
+                  },
                 ),
-              ),
-            ),
-          ),
         ],
       ),
       body: Column(
@@ -545,32 +702,58 @@ class _HomePageState extends State<HomePage> {
                   controller: searchController,
                   decoration: InputDecoration(
                     hintText: 'Search for courses...',
-                    prefixIcon: const Icon(Icons.search),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                    hintStyle: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                    ),
+                    prefixIcon: Icon(
+                      Icons.search,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    filled: true,
+                    fillColor: Theme.of(context).colorScheme.surfaceContainerHigh.withValues(alpha: 0.5),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(
+                        color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.3),
+                        width: 1.5,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide(
                         color: Theme.of(context).colorScheme.primary,
+                        width: 2.0,
                       ),
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
                     ),
                     suffixIcon: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
-                          child: Text(
-                            (searchQuery.isEmpty &&
-                                    !filterMidSem &&
-                                    !filterEndSem &&
-                                    selectedYear == null &&
-                                    selectedTypes.isEmpty)
-                                ? '${courses.length} courses'
-                                : '${filteredCourses.length} / ${courses.length}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Theme.of(context).hintColor,
+                        if (screenWidth >= 360)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            margin: const EdgeInsets.only(right: 4),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              (searchQuery.isEmpty &&
+                                      !filterMidSem &&
+                                      !filterEndSem &&
+                                      selectedYear == null &&
+                                      selectedTypes.isEmpty)
+                                  ? '${courses.length} courses'
+                                  : '${filteredCourses.length} / ${courses.length}',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
                             ),
                           ),
-                        ),
                         if (searchController.text.isNotEmpty)
                           IconButton(
                             icon: const Icon(Icons.clear),
@@ -580,7 +763,7 @@ class _HomePageState extends State<HomePage> {
                             },
                           )
                         else
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 8),
                       ],
                     ),
                     suffixIconConstraints: const BoxConstraints(
@@ -599,16 +782,33 @@ class _HomePageState extends State<HomePage> {
                         child: Row(
                           children: [
                             ActionChip(
-                              avatar: const Icon(Icons.tune, size: 16),
-                              label: const Text('Filters'),
+                              avatar: activeFiltersCount > 0
+                                  ? Container(
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context).colorScheme.primary,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Text(
+                                        '$activeFiltersCount',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    )
+                                  : const Icon(Icons.tune, size: 16),
+                              label: Text(
+                                activeFiltersCount > 0 ? 'Filters ($activeFiltersCount)' : 'Filters',
+                                style: TextStyle(
+                                  fontWeight: activeFiltersCount > 0 ? FontWeight.bold : null,
+                                ),
+                              ),
                               onPressed: () => _showFilterSheet(context),
-                              backgroundColor:
-                                  (selectedYear != null ||
-                                          selectedTypes.isNotEmpty)
-                                      ? Theme.of(
-                                        context,
-                                      ).colorScheme.primaryContainer
-                                      : null,
+                              backgroundColor: activeFiltersCount > 0
+                                  ? Theme.of(context).colorScheme.primaryContainer
+                                  : null,
                             ),
                             const SizedBox(width: 8),
                             FilterChip(
@@ -828,13 +1028,27 @@ class _HomePageState extends State<HomePage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Drag indicator handle
+                      Align(
+                        alignment: Alignment.center,
+                        child: Container(
+                          width: 36,
+                          height: 4,
+                          margin: const EdgeInsets.only(bottom: 20),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.8),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
                             'Detailed Filters',
-                            style: Theme.of(context).textTheme.headlineSmall
-                                ?.copyWith(fontWeight: FontWeight.bold),
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
                           ),
                           TextButton(
                             onPressed: () {
