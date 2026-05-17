@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class PaperButton extends StatefulWidget {
   final String label;
@@ -94,7 +95,10 @@ class _PaperButtonState extends State<PaperButton> with SingleTickerProviderStat
     }
 
     return GestureDetector(
-      onTapDown: (_) => _controller.forward(),
+      onTapDown: (_) {
+        HapticFeedback.lightImpact();
+        _controller.forward();
+      },
       onTapUp: (_) => _controller.reverse(),
       onTapCancel: () => _controller.reverse(),
       child: ScaleTransition(

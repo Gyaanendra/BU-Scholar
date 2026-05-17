@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'models/course.dart';
@@ -7,6 +8,8 @@ import 'widgets/contribute_footer.dart';
 import 'widgets/course_card.dart';
 import 'widgets/course_list_tile.dart';
 import 'widgets/paper_button.dart';
+import 'widgets/shimmer_loading.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({
@@ -46,6 +49,8 @@ class _HomePageState extends State<HomePage> {
   int loadedCourses = 0;
   String? errorMessage;
   final Set<int> _expandedCourseNums = {};
+  final ScrollController _scrollController = ScrollController();
+  bool _showScrollToTop = false;
 
   String _getCategoryName(String courseId) {
     final id = courseId.toUpperCase();
@@ -54,6 +59,16 @@ class _HomePageState extends State<HomePage> {
     if (id.startsWith('EPHY')) return 'PHYSICS & SCIENCES';
     if (id.startsWith('UVAC')) return 'VALUE ADDED COURSES';
     return 'GENERAL';
+  }
+
+  Color _getCategoryAccentColor(String category) {
+    switch (category) {
+      case 'CS CORE': return Colors.blue;
+      case 'MATH & FOUNDATIONS': return Colors.orange;
+      case 'PHYSICS & SCIENCES': return Colors.teal;
+      case 'VALUE ADDED COURSES': return Colors.green;
+      default: return Colors.indigo;
+    }
   }
 
   void _toggleCourseExpanded(int courseNum) {
@@ -65,91 +80,402 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _showColorPicker() {
-    final colors = [
-      Colors.deepPurple,
-      Colors.indigo,
-      Colors.blue,
-      Colors.teal,
-      Colors.green,
-      Colors.orange,
-      Colors.deepOrange,
-      Colors.pink,
-      Colors.blueGrey,
-      const Color(0xFF6750A4), // Material 3 Default
-      const Color(0xFF2196F3),
-      const Color(0xFFE91E63),
+    final colorOptions = <(String, Color)>[
+      ('Deep Purple', Colors.deepPurple),
+      ('Indigo', Colors.indigo),
+      ('Ocean Blue', Colors.blue),
+      ('Teal', Colors.teal),
+      ('Cyan', Colors.cyan),
+      ('Forest Green', Colors.green),
+      ('Lime', Colors.lime.shade700),
+      ('Amber', Colors.amber),
+      ('Coral', Colors.deepOrange),
+      ('Red', Colors.red),
+      ('Rose', Colors.pink),
+      ('Maroon', const Color(0xFF880E4F)),
+      ('Slate', Colors.blueGrey),
+      ('Brown', Colors.brown),
+      ('M3 Violet', const Color(0xFF6750A4)),
+      ('Sky', const Color(0xFF2196F3)),
+      ('Fuchsia', const Color(0xFFE91E63)),
+      ('Gold', const Color(0xFFFFB300)),
+      ('Mint', const Color(0xFF00BFA5)),
+      ('Lavender', const Color(0xFF7C4DFF)),
     ];
 
-    showDialog(
+    Color previewColor = widget.currentAccentColor;
+    final hexController = TextEditingController(
+      text: previewColor.toARGB32().toRadixString(16).substring(2).toUpperCase(),
+    );
+
+    showModalBottomSheet(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Pick Accent Color'),
-            content: SizedBox(
-              width: 300,
-              child: GridView.builder(
-                shrinkWrap: true,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 4,
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
+      isScrollControlled: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (ctx) => DefaultTabController(
+        length: 2,
+        child: StatefulBuilder(
+          builder: (context, setSheetState) {
+            void updateColor(Color c) {
+              setSheetState(() {
+                previewColor = c;
+                hexController.text =
+                    c.toARGB32().toRadixString(16).substring(2).toUpperCase();
+                hexController.selection = TextSelection.fromPosition(
+                  TextPosition(offset: hexController.text.length),
+                );
+              });
+            }
+
+            final previewName = colorOptions
+                .where((e) => e.$2.toARGB32() == previewColor.toARGB32())
+                .map((e) => e.$1)
+                .firstOrNull ?? 'Custom';
+
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
+              child: Container(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.85,
                 ),
-                itemCount: colors.length,
-                itemBuilder: (context, index) {
-                  final color = colors[index];
-                  final isSelected =
-                      widget.currentAccentColor == color;
-                  return GestureDetector(
-                    onTap: () {
-                      widget.onAccentColorChange(color);
-                      Navigator.pop(context);
-                    },
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: color,
-                        shape: BoxShape.circle,
-                        border:
-                            isSelected
-                                ? Border.all(color: Colors.white, width: 3)
-                                : null,
-                        boxShadow:
-                            isSelected
-                                ? [
-                                  BoxShadow(
-                                    color: color.withValues(alpha: 0.5),
-                                    blurRadius: 8,
-                                    spreadRadius: 2,
-                                  ),
-                                ]
-                                : null,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Drag handle
+                    Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: Center(
+                        child: Container(
+                          width: 36, height: 4,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.8),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
                       ),
-                      child:
-                          isSelected
-                              ? const Icon(
-                                Icons.check,
-                                color: Colors.white,
-                                size: 20,
-                              )
-                              : null,
                     ),
-                  );
-                },
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Accent Color',
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Any color in the universe — yours to pick.',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          // Live preview strip
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 250),
+                            height: 54,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  previewColor,
+                                  previewColor.withValues(alpha: 0.55),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: previewColor.withValues(alpha: 0.35),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  previewName,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    '#${previewColor.toARGB32().toRadixString(16).substring(2).toUpperCase()}',
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 11,
+                                      fontFamily: 'monospace',
+                                      letterSpacing: 1,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                        ],
+                      ),
+                    ),
+                    // Tabs
+                    TabBar(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      tabs: const [
+                        Tab(text: 'Swatches'),
+                        Tab(text: 'Color Wheel'),
+                      ],
+                      labelStyle: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 13),
+                      indicatorSize: TabBarIndicatorSize.tab,
+                      dividerColor: Colors.transparent,
+                    ),
+                    Flexible(
+                      child: TabBarView(
+                        children: [
+                          // ── Tab 1: Swatches ──────────────────────────────
+                          SingleChildScrollView(
+                            padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                            child: GridView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 5,
+                                mainAxisSpacing: 10,
+                                crossAxisSpacing: 10,
+                                childAspectRatio: 0.82,
+                              ),
+                              itemCount: colorOptions.length,
+                              itemBuilder: (context, index) {
+                                final (name, color) = colorOptions[index];
+                                final isSelected =
+                                    previewColor.toARGB32() == color.toARGB32();
+                                return GestureDetector(
+                                  onTap: () {
+                                    HapticFeedback.selectionClick();
+                                    updateColor(color);
+                                  },
+                                  child: Column(
+                                    children: [
+                                      AnimatedContainer(
+                                        duration: const Duration(milliseconds: 180),
+                                        width: isSelected ? 50 : 44,
+                                        height: isSelected ? 50 : 44,
+                                        decoration: BoxDecoration(
+                                          color: color,
+                                          shape: BoxShape.circle,
+                                          border: isSelected
+                                              ? Border.all(
+                                                  color: Colors.white, width: 3)
+                                              : Border.all(
+                                                  color: Colors.transparent,
+                                                  width: 3),
+                                          boxShadow: isSelected
+                                              ? [
+                                                  BoxShadow(
+                                                    color: color.withValues(
+                                                        alpha: 0.5),
+                                                    blurRadius: 10,
+                                                    spreadRadius: 2,
+                                                  )
+                                                ]
+                                              : [],
+                                        ),
+                                        child: isSelected
+                                            ? const Icon(Icons.check,
+                                                color: Colors.white, size: 20)
+                                            : null,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        name,
+                                        style: TextStyle(
+                                          fontSize: 8.5,
+                                          fontWeight: isSelected
+                                              ? FontWeight.bold
+                                              : FontWeight.normal,
+                                          color: isSelected
+                                              ? color
+                                              : Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurfaceVariant,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+
+                          // ── Tab 2: Color Wheel ───────────────────────────
+                          SingleChildScrollView(
+                            padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+                            child: Column(
+                              children: [
+                                // HSV color wheel from flutter_colorpicker
+                                ColorPicker(
+                                  pickerColor: previewColor,
+                                  onColorChanged: (c) => updateColor(c),
+                                  colorPickerWidth: double.infinity,
+                                  pickerAreaHeightPercent: 0.5,
+                                  enableAlpha: false,
+                                  hexInputBar: false,
+                                  labelTypes: const [],
+                                  displayThumbColor: true,
+                                  paletteType: PaletteType.hsvWithHue,
+                                ),
+                                const SizedBox(height: 12),
+                                // Hex input
+                                Row(
+                                  children: [
+                                    Container(
+                                      width: 36, height: 36,
+                                      decoration: BoxDecoration(
+                                        color: previewColor,
+                                        borderRadius: BorderRadius.circular(8),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: previewColor.withValues(alpha: 0.4),
+                                            blurRadius: 6,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: TextField(
+                                        controller: hexController,
+                                        maxLength: 6,
+                                        textCapitalization:
+                                            TextCapitalization.characters,
+                                        decoration: InputDecoration(
+                                          prefixText: '#',
+                                          labelText: 'Hex Code',
+                                          counterText: '',
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
+                                                  horizontal: 14, vertical: 12),
+                                        ),
+                                        style: const TextStyle(
+                                          fontFamily: 'monospace',
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 1.5,
+                                        ),
+                                        onChanged: (val) {
+                                          if (val.length == 6) {
+                                            try {
+                                              final c = Color(
+                                                  int.parse('FF$val', radix: 16));
+                                              setSheetState(
+                                                  () => previewColor = c);
+                                            } catch (_) {}
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Apply / Cancel buttons
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 12, 24, 28),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.pop(context),
+                              style: OutlinedButton.styleFrom(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14)),
+                              ),
+                              child: const Text('Cancel'),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            flex: 2,
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 250),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(14),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: previewColor.withValues(alpha: 0.4),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: FilledButton(
+                                onPressed: () {
+                                  widget.onAccentColorChange(previewColor);
+                                  Navigator.pop(context);
+                                },
+                                style: FilledButton.styleFrom(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 14),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14)),
+                                  backgroundColor: previewColor,
+                                ),
+                                child: const Text('Apply Color',
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white)),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-            ],
-          ),
+            );
+          },
+        ),
+      ),
     );
   }
 
   @override
   void initState() {
     super.initState();
-
+    _scrollController.addListener(() {
+      final show = _scrollController.offset > 400;
+      if (show != _showScrollToTop) setState(() => _showScrollToTop = show);
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await _loadCourses();
     });
@@ -197,6 +523,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void dispose() {
     searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -416,6 +743,7 @@ class _HomePageState extends State<HomePage> {
             .toList();
 
     return ListView.builder(
+      controller: _scrollController,
       padding: const EdgeInsets.symmetric(vertical: 8),
       itemCount: activeCategories.length + 1,
       itemBuilder: (context, catIndex) {
@@ -434,16 +762,43 @@ class _HomePageState extends State<HomePage> {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
-              child: Text(
-                category,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.primary.withValues(alpha: 0.8),
-                ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 4,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      color: _getCategoryAccentColor(category),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    category,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
+                      color: _getCategoryAccentColor(category),
+                    ),
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: _getCategoryAccentColor(category).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      '${categoryCourses.length}',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: _getCategoryAccentColor(category),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             if (isGridView)
@@ -511,65 +866,73 @@ class _HomePageState extends State<HomePage> {
                   for (int i = 0; i < categoryCourses.length; i++) ...[
                     (() {
                       final isExpanded = _expandedCourseNums.contains(categoryCourses[i].courseNum);
-                      return AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.fastOutSlowIn,
-                        margin: EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: isExpanded ? 8 : 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isExpanded
-                              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.05)
-                              : Theme.of(context).colorScheme.surfaceContainerLow.withValues(alpha: 0.5),
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(
-                            color: isExpanded
-                                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)
-                                : Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.2),
-                            width: isExpanded ? 1.5 : 1.0,
+                      // Global index for stagger: sum of all items before this category + i
+                      final globalIdx = activeCategories
+                          .take(catIndex)
+                          .fold(0, (sum, c) => sum + (groupedCourses[c]?.length ?? 0)) + i;
+                      return _StaggeredItem(
+                        key: ValueKey('stagger_${categoryCourses[i].courseNum}'),
+                        index: globalIdx,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.fastOutSlowIn,
+                          margin: EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: isExpanded ? 8 : 4,
                           ),
-                          boxShadow: isExpanded
-                              ? [
-                                  BoxShadow(
-                                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
-                                    blurRadius: 16,
-                                    offset: const Offset(0, 4),
-                                  )
-                                ]
-                              : [],
-                        ),
-                        clipBehavior: Clip.antiAlias,
-                        child: Column(
-                          children: [
-                            CourseListTile(
-                              course: categoryCourses[i],
-                              isExpanded: isExpanded,
-                              onTap: () => _toggleCourseExpanded(categoryCourses[i].courseNum),
+                          decoration: BoxDecoration(
+                            color: isExpanded
+                                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.05)
+                                : Theme.of(context).colorScheme.surfaceContainerLow.withValues(alpha: 0.5),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                              color: isExpanded
+                                  ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)
+                                  : Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.2),
+                              width: isExpanded ? 1.5 : 1.0,
                             ),
-                            AnimatedSize(
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.fastOutSlowIn,
-                              alignment: Alignment.topCenter,
-                              child: isExpanded
-                                  ? Padding(
-                                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                                      child: Wrap(
-                                        spacing: 8,
-                                        runSpacing: 8,
-                                        children: categoryCourses[i].papers
-                                            .map(
-                                              (paper) => PaperButton(
-                                                label: paper.label,
-                                                url: PyqDataService.paperUrl(paper),
-                                              ),
-                                            )
-                                            .toList(),
-                                      ),
+                            boxShadow: isExpanded
+                                ? [
+                                    BoxShadow(
+                                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
+                                      blurRadius: 16,
+                                      offset: const Offset(0, 4),
                                     )
-                                  : const SizedBox(width: double.infinity, height: 0),
-                            ),
-                          ],
+                                  ]
+                                : [],
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: Column(
+                            children: [
+                              CourseListTile(
+                                course: categoryCourses[i],
+                                isExpanded: isExpanded,
+                                onTap: () => _toggleCourseExpanded(categoryCourses[i].courseNum),
+                              ),
+                              AnimatedSize(
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.fastOutSlowIn,
+                                alignment: Alignment.topCenter,
+                                child: isExpanded
+                                    ? Padding(
+                                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                                        child: Wrap(
+                                          spacing: 8,
+                                          runSpacing: 8,
+                                          children: categoryCourses[i].papers
+                                              .map(
+                                                (paper) => PaperButton(
+                                                  label: paper.label,
+                                                  url: PyqDataService.paperUrl(paper),
+                                                ),
+                                              )
+                                              .toList(),
+                                        ),
+                                      )
+                                    : const SizedBox(width: double.infinity, height: 0),
+                              ),
+                            ],
+                          ),
                         ),
                       );
                     }()),
@@ -916,21 +1279,8 @@ class _HomePageState extends State<HomePage> {
           Expanded(
             child: Column(
               children: [
-                if (isLoading && !isStreamComplete)
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Column(
-                      children: [
-                        LinearProgressIndicator(value: null),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Loading courses... ($loadedCourses loaded)',
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ],
-                    ),
-                  ),
-                Expanded(
+
+                 Expanded(
                   child:
                       errorMessage != null
                           ? Center(
@@ -970,6 +1320,8 @@ class _HomePageState extends State<HomePage> {
                               ],
                             ),
                           )
+                          : isLoading && !isStreamComplete
+                          ? ShimmerLoading(isGridView: isGridView)
                           : courses.isEmpty && isStreamComplete
                           ? const Center(
                             child: Column(
@@ -1002,6 +1354,28 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
         ],
+      ),
+      floatingActionButton: AnimatedScale(
+        scale: _showScrollToTop ? 1.0 : 0.0,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutBack,
+        child: AnimatedOpacity(
+          opacity: _showScrollToTop ? 1.0 : 0.0,
+          duration: const Duration(milliseconds: 200),
+          child: FloatingActionButton.small(
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              _scrollController.animateTo(
+                0,
+                duration: const Duration(milliseconds: 400),
+                curve: Curves.easeOutCubic,
+              );
+            },
+            tooltip: 'Scroll to top',
+            elevation: 3,
+            child: const Icon(Icons.keyboard_arrow_up_rounded),
+          ),
+        ),
       ),
     );
   }
@@ -1143,6 +1517,58 @@ class _HomePageState extends State<HomePage> {
           },
         );
       },
+    );
+  }
+}
+
+/// A widget that slides and fades in after a staggered delay based on [index].
+class _StaggeredItem extends StatefulWidget {
+  final Widget child;
+  final int index;
+
+  const _StaggeredItem({super.key, required this.child, required this.index});
+
+  @override
+  State<_StaggeredItem> createState() => _StaggeredItemState();
+}
+
+class _StaggeredItemState extends State<_StaggeredItem>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _opacity;
+  late Animation<Offset> _slide;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 320),
+    );
+    _opacity = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
+    _slide = Tween<Offset>(
+      begin: const Offset(-0.06, 0),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic));
+
+    // Staggered delay: cap at 400ms so the last item still feels snappy
+    final delay = Duration(milliseconds: (widget.index * 38).clamp(0, 400));
+    Future.delayed(delay, () {
+      if (mounted) _ctrl.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SlideTransition(
+      position: _slide,
+      child: FadeTransition(opacity: _opacity, child: widget.child),
     );
   }
 }

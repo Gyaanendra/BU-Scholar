@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../models/course.dart';
 import '../services/pyq_data_service.dart';
 import '../utils/string_extensions.dart';
@@ -96,7 +97,10 @@ class _CourseCardState extends State<CourseCard> with SingleTickerProviderStateM
     final isCompactMobile = screenWidth < 380;
 
     return GestureDetector(
-      onTapDown: (_) => _controller.forward(),
+      onTapDown: (_) {
+        HapticFeedback.lightImpact();
+        _controller.forward();
+      },
       onTapUp: (_) => _controller.reverse(),
       onTapCancel: () => _controller.reverse(),
       onTap: () => _showCourseOptions(context),
@@ -308,7 +312,19 @@ class _CourseCardState extends State<CourseCard> with SingleTickerProviderStateM
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                  subtitle: Text('Year: ${paper.paperSuffix}'),
+                                  subtitle: Row(
+                                    children: [
+                                      _PaperTypeBadge(label: paper.label),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        paper.paperSuffix,
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                   trailing: const Icon(Icons.chevron_right),
                                   onTap: () {
                                     Navigator.pop(context);
@@ -383,6 +399,69 @@ class _StatBox extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Compact colored badge showing the paper type (Mid, End, Supp, etc.)
+class _PaperTypeBadge extends StatelessWidget {
+  final String label;
+  const _PaperTypeBadge({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lower = label.toLowerCase();
+
+    Color bg;
+    Color fg;
+    String text;
+
+    if (lower.contains('end semester')) {
+      bg = Colors.green.withValues(alpha: isDark ? 0.25 : 0.12);
+      fg = isDark ? Colors.green.shade300 : Colors.green.shade800;
+      text = 'END';
+    } else if (lower.contains('mid semester')) {
+      bg = Colors.purple.withValues(alpha: isDark ? 0.25 : 0.12);
+      fg = isDark ? Colors.purple.shade300 : Colors.purple.shade800;
+      text = 'MID';
+    } else if (lower.contains('supplementary') || lower.contains('makeup')) {
+      bg = Colors.deepPurple.withValues(alpha: isDark ? 0.25 : 0.12);
+      fg = isDark ? Colors.deepPurple.shade300 : Colors.deepPurple.shade800;
+      text = 'SUPP';
+    } else if (lower.contains('quiz')) {
+      bg = Colors.orange.withValues(alpha: isDark ? 0.25 : 0.12);
+      fg = isDark ? Colors.orange.shade300 : Colors.orange.shade800;
+      text = 'QUIZ';
+    } else if (lower.contains('lab')) {
+      bg = Colors.teal.withValues(alpha: isDark ? 0.25 : 0.12);
+      fg = isDark ? Colors.teal.shade300 : Colors.teal.shade800;
+      text = 'LAB';
+    } else if (lower.contains('nptel') || lower.contains('assignment')) {
+      bg = Colors.indigo.withValues(alpha: isDark ? 0.25 : 0.12);
+      fg = isDark ? Colors.indigo.shade300 : Colors.indigo.shade800;
+      text = 'ASGN';
+    } else {
+      bg = Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.6);
+      fg = Theme.of(context).colorScheme.onPrimaryContainer;
+      text = 'PAPER';
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 9,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.5,
+          color: fg,
         ),
       ),
     );

@@ -17,7 +17,7 @@ class MainApp extends StatefulWidget {
   State<MainApp> createState() => _MainAppState();
 }
 
-class _MainAppState extends State<MainApp> {
+class _MainAppState extends State<MainApp> with SingleTickerProviderStateMixin {
   ThemeMode _themeMode = ThemeMode.system;
   Color _accentColor = Colors.deepPurple;
 
@@ -34,7 +34,7 @@ class _MainAppState extends State<MainApp> {
       if (colorValue != null) {
         _accentColor = Color(colorValue);
       }
-      
+
       final themeIndex = prefs.getInt('theme_mode');
       if (themeIndex != null) {
         _themeMode = ThemeMode.values[themeIndex];
@@ -58,20 +58,15 @@ class _MainAppState extends State<MainApp> {
         _themeMode = ThemeMode.dark;
       } else {
         final brightness = MediaQuery.platformBrightnessOf(context);
-        _themeMode = brightness == Brightness.dark ? ThemeMode.light : ThemeMode.dark;
+        _themeMode =
+            brightness == Brightness.dark ? ThemeMode.light : ThemeMode.dark;
       }
     });
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('theme_mode', _themeMode.index);
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'BU Scholar',
-      debugShowCheckedModeBanner: false,
-      themeMode: _themeMode,
-      theme: ThemeData(
+  ThemeData get _lightTheme => ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
           seedColor: _accentColor,
@@ -79,26 +74,47 @@ class _MainAppState extends State<MainApp> {
         ),
         scaffoldBackgroundColor: const Color(0xFFF8F8F8),
         cardTheme: const CardThemeData(surfaceTintColor: Colors.white),
-      ),
-      darkTheme: ThemeData(
+      );
+
+  ThemeData get _darkTheme => ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
           seedColor: _accentColor,
           brightness: Brightness.dark,
         ),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'BU Scholar',
+      debugShowCheckedModeBanner: false,
+      themeMode: _themeMode,
+      theme: _lightTheme,
+      darkTheme: _darkTheme,
+      // ── Smooth animated theme transition ────────────────────────────────
+      // Flutter 3.22+ supports themeAnimationStyle for custom curve/duration.
+      themeAnimationStyle: AnimationStyle(
+        curve: Curves.easeInOut,
+        duration: const Duration(milliseconds: 380),
+        reverseCurve: Curves.easeInOut,
+        reverseDuration: const Duration(milliseconds: 380),
       ),
+      // ────────────────────────────────────────────────────────────────────
       initialRoute: '/',
       onGenerateRoute: (settings) {
         if (settings.name == '/') {
-          return MaterialPageRoute(
+          return PageRouteBuilder(
             settings: settings,
-            builder: (context) => HomePage(
+            pageBuilder: (ctx, anim, secondaryAnim) => HomePage(
               title: 'Previous Year Question Papers',
               themeMode: _themeMode,
               onThemeToggle: _toggleTheme,
               onAccentColorChange: _changeAccentColor,
               currentAccentColor: _accentColor,
             ),
+            transitionDuration: Duration.zero,
+            reverseTransitionDuration: Duration.zero,
           );
         }
         if (settings.name == '/pdf_viewer') {
